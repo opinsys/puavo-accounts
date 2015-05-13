@@ -1,0 +1,7 @@
+views:
+  new:
+    description: Täytä lomakkeen tiedot luodaksesi käyttäjätunnus
+    name: Nimi
+    password: Salasana
+layout:
+  title: Käyttäjätunnuksen luonti

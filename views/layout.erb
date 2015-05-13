@@ -18,7 +18,13 @@
     <![endif]-->
   </head>
   <body>
-    <h1>Hello, world!</h1>
+    <div class="container">
+
+      <h1><%= t.layout.title %></h1>
+
+      <%= yield %>
+
+    </div>
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="/vendor/jquery-1.11.3.min.js"></script>
