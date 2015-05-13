@@ -1,7 +1,19 @@
 views:
   new:
     description: Täytä lomakkeen tiedot luodaksesi käyttäjätunnus
-    name: Nimi
+    first_name: Etunimi
+    last_name: Sukunimi
+    username: Käyttäjätunnus
+    email: Sähköpostiosoite
+    telephone_number: Puhelinnumero
+    locale: Kieli
+    locale_key:
+      fi_FI: Suomi
+      en_US: Englanti (Yhdysvallat)
+      sv_FI: Ruotsi (Suomi)
+      de_CH: Saksa (Sveitsi)
+      fr_CH: Ranska (Sveitsi)
     password: Salasana
+    password_confirmation: Salasana vahvistus
 layout:
   title: Käyttäjätunnuksen luonti

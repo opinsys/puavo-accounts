@@ -12,6 +12,11 @@ module PuavoAccounts
     end
 
     get "/new" do
+      @locales = [ "fi_FI",
+                   "en_US",
+                   "sv_FI",
+                   "de_CH",
+                   "fr_CH" ]
       erb :new
     end
 
