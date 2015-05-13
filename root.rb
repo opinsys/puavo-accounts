@@ -5,6 +5,8 @@ require "sinatra/r18n"
 module PuavoAccounts
   class Root < Sinatra::Base
 
+
+
     register Sinatra::R18n
 
     get "/" do
@@ -18,6 +20,10 @@ module PuavoAccounts
                    "de_CH",
                    "fr_CH" ]
       erb :new
+    end
+
+    post "/" do
+      params["user"].inspect
     end
 
   end
