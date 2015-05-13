@@ -1,10 +1,11 @@
 module PuavoAccounts
   class Users < Sinatra::Base
 
+    set :views, Proc.new { File.join(File.dirname(__FILE__), "../", "views/users") }
+
 
     get "/new" do
-      "User form"
-
+      erb :new
     end
 
     post "/" do
