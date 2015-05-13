@@ -1,8 +1,6 @@
 require "sinatra/base"
 require "sinatra/json"
 
-require_relative "resources/users"
-
 module PuavoAccounts
   class Root < Sinatra::Base
 
@@ -10,7 +8,9 @@ module PuavoAccounts
       "puavo accounts"
     end
 
-    use PuavoAccounts::Users
+    get "/new" do
+      erb :new
+    end
 
   end
 end
