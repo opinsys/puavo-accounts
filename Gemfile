@@ -1,8 +1,10 @@
 source "http://rubygems.org"
 
-gem "sinatra", "~> 1.4.4"
+gem "sinatra"
 gem "sinatra-contrib"
-gem "puma", "~> 2.11.1"
-gem "sinatra-r18n", "~> 1.1.8"
-gem "debugger"
-gem 'fluent-logger', "~> 0.4.3"
+gem "puma"
+gem "sinatra-r18n"
+
+group :test do
+  gem "shotgun"
+end
