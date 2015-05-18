@@ -15,5 +15,6 @@ views:
       fr_CH: Ranska (Sveitsi)
     password: Salasana
     password_confirmation: Salasana vahvistus
+    submit: Tallenna
 layout:
   title: Käyttäjätunnuksen luonti

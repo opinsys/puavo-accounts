@@ -1,5 +1,5 @@
 <p><%= t.views.new.description %></p>
-<form role="form">
+<form action="/" role="form" method="post">
   <div class="form-group">
     <label for="user_first_name"><%= t.views.new.first_name %>:</label>
     <input type="text" name="user[first_name]" class="form-control" id="user_first_name">
@@ -36,12 +36,16 @@
 
   <div class="form-group">
     <label for="user_password"><%= t.views.new.password %>:</label>
-    <input type="text" name="user[password]" class="form-control" id="user_password">
+    <input type="password" name="user[password]" class="form-control" id="user_password">
   </div>
 
   <div class="form-group">
     <label for="user_password_confirmation"><%= t.views.new.password_confirmation %>:</label>
-    <input type="text" name="user[password_confirmation]" class="form-control" id="user_password_confirmation">
+    <input type="password" name="user[password_confirmation]" class="form-control" id="user_password_confirmation">
+  </div>
+
+  <div class="form-group">
+    <input class="btn primary" type="submit" value="<%= t.views.new.submit %>">
   </div>
 
 </form>
