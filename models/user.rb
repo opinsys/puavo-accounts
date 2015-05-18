@@ -1,4 +1,5 @@
 require 'redis'
+require 'json'
 
 module PuavoAccounts
   class User
@@ -12,7 +13,7 @@ module PuavoAccounts
 
     def initialize(user_data = {})
       @data = user_data
-      @errors = nil
+      @errors = {}
       @uuid = nil
     end
 
@@ -29,7 +30,7 @@ module PuavoAccounts
     def redis_fetch(uuid)
       @uuid = uuid
       redis = redis_connection
-      @data = redis.get(uuid_key)
+      @data = JSON.parse(redis.get(uuid_key))
     end
 
     def redis_save
