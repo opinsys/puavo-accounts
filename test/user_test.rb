@@ -32,7 +32,7 @@ describe PuavoAccounts::User do
       end
     end
 
-    descript "and save user to redis" do
+    describe "and save user to redis" do
 
       it "user data must remain the same" do
         user = PuavoAccounts::User.new(user_data)
