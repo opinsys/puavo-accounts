@@ -1,5 +1,6 @@
 require "minitest/autorun"
 require 'rack/test'
+require 'webmock/minitest'
 
 require_relative "../config.rb"
 

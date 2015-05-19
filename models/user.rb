@@ -1,5 +1,6 @@
 require 'redis'
 require 'json'
+require 'http'
 
 module PuavoAccounts
   class User
