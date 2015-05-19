@@ -45,7 +45,7 @@ module PuavoAccounts
       # Send email
       $mailer.send( :to => @user.data["email"],
                     :subject => "test",
-                    :body => "test body" )
+                    :body => @user.uuid )
     end
 
     get "/confirm/:uuid" do
