@@ -1,6 +1,8 @@
 require "minitest/autorun"
 require 'rack/test'
 
+require_relative "../config.rb"
+
 require_relative "../models/user"
 require_relative "../root"
 
