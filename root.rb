@@ -4,10 +4,12 @@ require "sinatra/json"
 require "sinatra/r18n"
 
 require_relative "models/user"
+require_relative "lib/mailer"
 
 module PuavoAccounts
-  class Root < Sinatra::Base
+  $mailer = PuavoAccounts::Mailer.new
 
+  class Root < Sinatra::Base
 
 
     register Sinatra::R18n
