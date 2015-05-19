@@ -16,6 +16,11 @@ describe PuavoAccounts::Root do
   describe "when create new user" do
 
     before do
+      stub_request(:post, "http://127.0.0.1/v3/users_validate").
+        with(:headers => {'Host'=>'www.example.net'}).
+        to_return( :status => 200,
+                   :body => { :status => 'successfully' }.to_json, :headers => {})
+
       $mailer = Class.new do
         def self.options
           return @options
@@ -49,6 +54,12 @@ describe PuavoAccounts::Root do
       assert_equal user.data["first_name"], "Jane"
       assert_equal user.data["last_name"], "Doe"
       assert_equal user.data["email"], "jane.doe@example.com"
+    end
+
+    it "validate user information by puavo-rest" do
+      assert_equal 200, last_response.status
+
+      
     end
   end
 

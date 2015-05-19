@@ -19,8 +19,19 @@ module PuavoAccounts
     end
 
     def valid?
-      # FIXME validate request to puavo-rest
-      return true
+      rest_response = HTTP.with_headers("Host" => CONFIG["puavo-rest"]["organisation_domain"])
+        .post(CONFIG["puavo-rest"]["server"] + "/v3/users_validate",
+              :form => self.data )
+
+      case rest_response.status
+      when 200
+        @errors = nil
+        return true
+      when 400
+        # FIXME
+      else
+        raise "Can't connect to puavo-rest server"
+      end
     end
 
     def save
