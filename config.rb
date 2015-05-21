@@ -1,7 +1,9 @@
 CONFIG = {
   "puavo-rest" => {
     "server" => "http://127.0.0.1",
-    "organisation_domain" => "www.example.net"
+    "organisation_domain" => "www.example.net",
+    "username" => "test-user",
+    "password" => "secret"
   },
   "smtp" => {
     "from" => "Opinsys <no-reply@opinsys.fi>",

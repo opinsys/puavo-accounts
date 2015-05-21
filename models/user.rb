@@ -19,7 +19,9 @@ module PuavoAccounts
     end
 
     def valid?
-      rest_response = HTTP.with_headers("Host" => CONFIG["puavo-rest"]["organisation_domain"])
+      rest_response = HTTP.basic_auth(:user => CONFIG["puavo-rest"]["username"],
+                                      :pass => CONFIG["puavo-rest"]["password"])
+        .with_headers("Host" => CONFIG["puavo-rest"]["organisation_domain"])
         .post(CONFIG["puavo-rest"]["server"] + "/v3/users_validate",
               :form => self.data )
 

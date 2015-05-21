@@ -13,11 +13,11 @@ describe PuavoAccounts::Root do
     end
   end
 
-  describe "when create new user" do
+  describe "when register new user" do
 
     before do
-      stub_request(:post, "http://127.0.0.1/v3/users_validate").
-        with(:headers => {'Host'=>'www.example.net'}).
+      @stub_validate = stub_request(:post, "http://127.0.0.1/v3/users_validate").
+        with(:headers => {'Host'=>'www.example.net', 'Authorization'=>'Basic dGVzdC11c2VyOnNlY3JldA=='}).
         to_return( :status => 200,
                    :body => { :status => 'successfully' }.to_json, :headers => {})
 
@@ -64,7 +64,7 @@ describe PuavoAccounts::Root do
     it "validate user information by puavo-rest" do
       assert_equal 200, last_response.status
 
-      
+      assert_requested(@stub_validate)
     end
   end
 
