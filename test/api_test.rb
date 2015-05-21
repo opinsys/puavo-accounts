@@ -34,7 +34,12 @@ describe PuavoAccounts::Root do
       post "/", {
         "user[first_name]" => "Jane",
         "user[last_name]" => "Doe",
-        "user[email]" => "jane.doe@example.com"
+        "user[email]" => "jane.doe@example.com",
+        "user[username" => "jane.doe",
+        "user[telephone_number]" => "1234567",
+        "user[locale]" => "en_US",
+        "user[password]" => "secret",
+        "user[password_confirmation]" => "secret"
       }
     end
 
@@ -47,7 +52,7 @@ describe PuavoAccounts::Root do
     it "user information has been stored in the database" do
       assert_equal 200, last_response.status
 
-      uuid = $mailer.options[:body]
+      uuid = $mailer.options[:body].match("https://www.example.net/confirm/(.+)$")[1]
       user = PuavoAccounts::User.new
       user.redis_fetch(uuid)
 

@@ -40,12 +40,13 @@ module PuavoAccounts
       # Save user to redis
       @user.redis_save
 
-      @user.uuid
+      confirm_url = "https://www.example.net/confirm/#{ @user.uuid }"
+      body = t.api.confirm.message(@user.data["first_name"], confirm_url )
 
       # Send email
       $mailer.send( :to => @user.data["email"],
-                    :subject => "test",
-                    :body => @user.uuid )
+                    :subject => t.api.confirm.subject,
+                    :body => body )
     end
 
     get "/confirm/:uuid" do
