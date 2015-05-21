@@ -1,4 +1,3 @@
-# FIXME: test/production
 CONFIG = {
   "puavo-rest" => {
     "server" => "http://127.0.0.1",
@@ -13,3 +12,11 @@ CONFIG = {
     }
   }
 }
+
+if ENV["RACK_ENV"] != "test"
+  begin
+    CONFIG.merge!(YAML.load_file "/etc/puavo-accounts.yml")
+  rescue Errno::ENOENT
+    raise "No such configuration file! /etc/puavo-accounts.yml"
+  end
+end
