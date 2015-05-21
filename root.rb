@@ -58,6 +58,7 @@ module PuavoAccounts
       if @user.save
         # render OK
         @user.data.inspect
+        @user.redis_destroy
       else
         # render fail
       end

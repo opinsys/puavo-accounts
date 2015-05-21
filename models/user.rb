@@ -42,13 +42,24 @@ module PuavoAccounts
     def redis_fetch(uuid)
       @uuid = uuid
       redis = redis_connection
-      @data = JSON.parse(redis.get(uuid_key))
+      get_data = redis.get(uuid_key)
+
+      if get_data.nil?
+        false
+      else
+        @data = JSON.parse(get_data)
+      end
     end
 
     def redis_save
       redis = redis_connection
       redis.set(uuid_key, @data.to_json)
       redis.expire(uuid_key, EXPIRE)
+    end
+
+    def redis_destroy
+      redis = redis_connection
+      redis.del(uuid_key)
     end
 
 
