@@ -71,7 +71,7 @@ describe PuavoAccounts::Root do
   describe "when the user registration to confirm" do
 
     before do
-      stub_request(:post, "http://127.0.0.1/v3/users").
+      @stub_create_user = stub_request(:post, "http://127.0.0.1/v3/users").
         with(:headers => {'Host'=>'www.example.net'},
              :body => {
                "first_name" => "Jane",
@@ -131,7 +131,7 @@ describe PuavoAccounts::Root do
     end
 
     it "send create request to the puavo-rest" do
-
+      assert_requested(@stub_create_user)
     end
 
     it "remove user information from the database" do
