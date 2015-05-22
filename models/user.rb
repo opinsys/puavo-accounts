@@ -76,6 +76,13 @@ module PuavoAccounts
       redis.del(uuid_key)
     end
 
+    def add_error(attribute, message)
+      unless @errors[attribute]
+        @errors[attribute] = []
+      end
+      @errors[attribute].push message
+    end
+
     def html_attribute(attribute)
       "user[#{ attribute }]"
     end

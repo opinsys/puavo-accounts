@@ -16,22 +16,11 @@ describe PuavoAccounts::Root do
   describe "when register new user" do
 
     before do
-      @stub_validate = stub_request(:post, "http://127.0.0.1/v3/users_validate").
-        with(:headers => {'Host'=>'www.example.net', 'Authorization'=>'Basic dGVzdC11c2VyOnNlY3JldA=='}).
-        to_return( :status => 200,
-                   :body => { :status => 'successfully' }.to_json, :headers => {})
+      @stub_validate = puavo_rest_stub_validate
 
-      $mailer = Class.new do
-        def self.options
-          return @options
-        end
+      stub_mailer
 
-        def self.send(args)
-          @options = args
-        end
-      end
-
-      post "/", {
+      @user_form = {
         "user[first_name]" => "Jane",
         "user[last_name]" => "Doe",
         "user[email]" => "jane.doe@example.com",
@@ -44,12 +33,16 @@ describe PuavoAccounts::Root do
     end
 
     it "will be sent an email to user" do
+      post "/", @user_form
+
       assert_equal 200, last_response.status
 
       assert_equal "jane.doe@example.com", $mailer.options[:to]
     end
 
     it "user information has been stored in the database" do
+      post "/", @user_form
+
       assert_equal 200, last_response.status
 
       uuid = $mailer.options[:body].match("https://www.example.net/confirm/(.+)$")[1]
@@ -62,9 +55,18 @@ describe PuavoAccounts::Root do
     end
 
     it "validate user information by puavo-rest" do
+      post "/", @user_form
+
       assert_equal 200, last_response.status
 
       assert_requested(@stub_validate)
+    end
+
+    it "render error if password doesn't match confirmation" do
+      @user_form.delete("user[password_confirmation]")
+      post "/", @user_form
+
+      last_response.body.must_include "Password doesn't match confirmation"
     end
   end
 
@@ -139,4 +141,22 @@ describe PuavoAccounts::Root do
     end
   end
 
+  def puavo_rest_stub_validate
+    stub_request(:post, "http://127.0.0.1/v3/users_validate").
+      with(:headers => {'Host'=>'www.example.net', 'Authorization'=>'Basic dGVzdC11c2VyOnNlY3JldA=='}).
+      to_return( :status => 200,
+                 :body => { :status => 'successfully' }.to_json, :headers => {})
+  end
+
+  def stub_mailer
+    $mailer = Class.new do
+      def self.options
+        return @options
+      end
+
+      def self.send(args)
+        @options = args
+      end
+    end
+  end
 end

@@ -25,8 +25,12 @@ module PuavoAccounts
     end
 
     post "/" do
-
       @user = User.new(params["user"])
+
+      if params["user"]["password"] != params["user"]["password_confirmation"]
+        @user.add_error("password_confirmation", t.errors.password_confirmation.does_not_match)
+        return erb :new
+      end
 
       unless @user.valid?
         # render form
@@ -61,6 +65,15 @@ module PuavoAccounts
     end
 
     helpers do
+
+      def show_error_message(user, attribute)
+        return unless user.errors[attribute]
+
+        @errors = user.errors[attribute]
+
+        erb :error_message
+
+      end
 
       def text_field(model, attribute, options = {})
         @name = model.html_attribute(attribute)
