@@ -28,7 +28,7 @@
   <div class="form-group">
     <label for="user_language"><%= t.views.new.locale %>:</label>
     <select name="user[locale]" class="form-control">
-      <% @locales.each do |locale| %>
+      <% CONFIG["locales"].each do |locale| %>
       <option value="<%= locale %>"><%= t.views.new.locale_key.send(locale) %></option>
       <% end %>
     </select>

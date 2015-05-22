@@ -1,4 +1,9 @@
 CONFIG = {
+  "locales" => [ "fi_FI",
+                 "en_US",
+                 "sv_FI",
+                 "de_CH",
+                 "fr_CH" ],
   "puavo-rest" => {
     "server" => "http://127.0.0.1",
     "organisation_domain" => "www.example.net",
