@@ -82,8 +82,7 @@ describe PuavoAccounts::Root do
                "username" => "jane.doe",
                "telephone_number" => "1234567",
                "locale" => "en_US",
-               "password" => "secret",
-               "password_confirmation]" => "secret" }).
+               "password" => "secret" }).
         to_return( :status => 200,
                    :body => {
                      "dn" => "puavoId=55,ou=People,dc=edu,dc=example,dc=fi",
@@ -122,7 +121,7 @@ describe PuavoAccounts::Root do
         "telephone_number" => "1234567",
         "locale" => "en_US",
         "password" => "secret",
-        "password_confirmation]" => "secret"
+        "password_confirmation" => "secret"
       })
       @user.redis_save
 
@@ -143,7 +142,16 @@ describe PuavoAccounts::Root do
 
   def puavo_rest_stub_validate
     stub_request(:post, "http://127.0.0.1/v3/users_validate").
-      with(:headers => {'Host'=>'www.example.net', 'Authorization'=>'Basic dGVzdC11c2VyOnNlY3JldA=='}).
+      with(:headers => {'Host'=>'www.example.net', 'Authorization'=>'Basic dGVzdC11c2VyOnNlY3JldA=='},
+           :body => {
+             "email"=>"jane.doe@example.com",
+             "first_name"=>"Jane",
+             "last_name"=>"Doe",
+             "locale"=>"en_US",
+             "password"=>"secret",
+             "telephone_number"=>"1234567",
+             "username"=>"jane.doe"
+           }).
       to_return( :status => 200,
                  :body => { :status => 'successfully' }.to_json, :headers => {})
   end
