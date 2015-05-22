@@ -76,6 +76,13 @@ module PuavoAccounts
       redis.del(uuid_key)
     end
 
+    def html_attribute(attribute)
+      "user[#{ attribute }]"
+    end
+
+    def css_id(attribute)
+      "user_#{ attribute }"
+    end
 
     private
 

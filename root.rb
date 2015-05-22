@@ -59,5 +59,18 @@ module PuavoAccounts
       end
 
     end
+
+    helpers do
+
+      def text_field(model, attribute, options = {})
+        @name = model.html_attribute(attribute)
+        @css_id = model.css_id(attribute)
+        @value = model.data[attribute]
+
+        erb :text_field
+      end
+
+    end
+
   end
 end
