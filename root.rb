@@ -73,6 +73,9 @@ module PuavoAccounts
         @user = model
         @attr = attribute
         @errors = []
+        @name = model.html_attribute(attribute)
+        @css_id = model.css_id(attribute)
+        @value = model.data[attribute]
 
         @form_group_class = "form-group"
 
