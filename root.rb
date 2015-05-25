@@ -33,7 +33,7 @@ module PuavoAccounts
       end
 
       unless @user.valid?
-        # render form
+        return erb :new
       end
 
       # Save user to redis

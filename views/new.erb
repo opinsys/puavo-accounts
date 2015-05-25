@@ -3,26 +3,31 @@
   <div class="form-group">
     <label for="user_first_name"><%= t.views.new.first_name %>:</label>
     <%= text_field(@user, "first_name" ) %>
+    <%= show_error_message(@user, "first_name") %>
   </div>
 
   <div class="form-group">
     <label for="user_last_name"><%= t.views.new.last_name %>:</label>
     <%= text_field(@user, "last_name" ) %>
+    <%= show_error_message(@user, "last_name") %>
   </div>
 
   <div class="form-group">
     <label for="user_username"><%= t.views.new.username %>:</label>
     <%= text_field(@user, "username" ) %>
+    <%= show_error_message(@user, "username") %>
   </div>
 
   <div class="form-group">
     <label for="user_email"><%= t.views.new.email %>:</label>
     <%= text_field(@user, "email" ) %>
+    <%= show_error_message(@user, "email") %>
   </div>
 
   <div class="form-group">
     <label for="user_telephone_number"><%= t.views.new.telephone_number %>:</label>
     <%= text_field(@user, "telephone_number" ) %>
+    <%= show_error_message(@user, "telephone_number") %>
   </div>
 
   <div class="form-group">
@@ -37,6 +42,7 @@
   <div class="form-group">
     <label for="user_password"><%= t.views.new.password %>:</label>
     <input type="password" name="user[password]" class="form-control" id="user_password">
+    <%= show_error_message(@user, "password") %>
   </div>
 
   <div class="form-group">

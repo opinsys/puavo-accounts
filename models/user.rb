@@ -31,10 +31,17 @@ module PuavoAccounts
         @errors = nil
         return true
       when 400
-        # FIXME
+        rest_response.parse["error"]["meta"]["invalid_attributes"].each do |attribute, errors|
+          errors.each do |error|
+            self.add_error(attribute, R18n.t.errors.by_code[error["code"]])
+          end
+        end
       else
         raise "Can't connect to puavo-rest server"
       end
+
+      return false
+
     end
 
     def save
