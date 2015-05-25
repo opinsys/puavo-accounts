@@ -8,6 +8,7 @@ gem "redis"
 gem "pony"
 gem "http"
 gem "webmock"
+gem "jwt"
 
 group :test do
   gem "shotgun"
