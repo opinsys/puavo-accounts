@@ -1,3 +1,5 @@
+require "yaml"
+
 CONFIG = {
   "locales" => [ "fi_FI",
                  "en_US",
