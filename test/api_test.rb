@@ -16,7 +16,15 @@ describe PuavoAccounts::Root do
   describe "when register new user" do
 
     before do
-      @stub_validate = puavo_rest_stub_validate
+      @rest_user = {
+        "email"=>"jane.doe@example.com",
+        "first_name"=>"Jane",
+        "last_name"=>"Doe",
+        "locale"=>"en_US",
+        "password"=>"secret",
+        "telephone_number"=>"1234567",
+        "username"=>"jane.doe"
+      }
 
       stub_mailer
 
@@ -33,6 +41,7 @@ describe PuavoAccounts::Root do
     end
 
     it "will be sent an email to user" do
+      @stub_validate = puavo_rest_stub_validate(@rest_user)
       post "/", @user_form
 
       assert_equal 200, last_response.status
@@ -41,6 +50,7 @@ describe PuavoAccounts::Root do
     end
 
     it "user information has been stored in the database" do
+      @stub_validate = puavo_rest_stub_validate(@rest_user)
       post "/", @user_form
 
       assert_equal 200, last_response.status
@@ -55,6 +65,7 @@ describe PuavoAccounts::Root do
     end
 
     it "validate user information by puavo-rest" do
+      @stub_validate = puavo_rest_stub_validate(@rest_user)
       post "/", @user_form
 
       assert_equal 200, last_response.status
@@ -63,10 +74,21 @@ describe PuavoAccounts::Root do
     end
 
     it "render error if password doesn't match confirmation" do
+      @stub_validate = puavo_rest_stub_validate(@rest_user)
       @user_form.delete("user[password_confirmation]")
       post "/", @user_form
 
       last_response.body.must_include "Password doesn't match confirmation"
+    end
+
+    it "render error if email is empty" do
+      @user_form.delete("user[email]")
+      @rest_user.delete("email")
+      @stub_validate = puavo_rest_stub_validate(@rest_user)
+
+      post "/", @user_form
+
+      last_response.body.must_include "Email is required!"
     end
   end
 
@@ -140,18 +162,10 @@ describe PuavoAccounts::Root do
     end
   end
 
-  def puavo_rest_stub_validate
+  def puavo_rest_stub_validate(user)
     stub_request(:post, "http://127.0.0.1/v3/users_validate").
       with(:headers => {'Host'=>'www.example.net', 'Authorization'=>'Basic dGVzdC11c2VyOnNlY3JldA=='},
-           :body => {
-             "email"=>"jane.doe@example.com",
-             "first_name"=>"Jane",
-             "last_name"=>"Doe",
-             "locale"=>"en_US",
-             "password"=>"secret",
-             "telephone_number"=>"1234567",
-             "username"=>"jane.doe"
-           }).
+           :body => user).
       to_return( :status => 200,
                  :body => { :status => 'successfully' }.to_json, :headers => {})
   end

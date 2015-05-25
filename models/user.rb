@@ -28,7 +28,6 @@ module PuavoAccounts
 
       case rest_response.status
       when 200
-        @errors = nil
         return true
       when 400
         rest_response.parse["error"]["meta"]["invalid_attributes"].each do |attribute, errors|

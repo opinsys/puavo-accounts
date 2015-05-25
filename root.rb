@@ -29,10 +29,13 @@ module PuavoAccounts
 
       if params["user"]["password"] != params["user"]["password_confirmation"]
         @user.add_error("password_confirmation", t.errors.password_confirmation.does_not_match)
-        return erb :new
       end
 
-      unless @user.valid?
+      if not params["user"]["email"] or params["user"]["email"].empty?
+        @user.add_error("email", t.errors.email_empty)
+      end
+
+      if not @user.valid? or not @user.errors.empty?
         return erb :new
       end
 
