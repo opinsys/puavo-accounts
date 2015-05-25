@@ -1,0 +1,11 @@
+<div class="<%= @form_group_class %>">
+  <label class="control-label" for="user_<%= @attr %>"><%= t.views.new[@attr] %>:</label>
+  <div class="controls">
+    <%= text_field(@user, @attr ) %>
+    <% @errors.each do |error| %>
+      <span class="help-block">
+        <%= error %>
+      </span>
+    <% end %>
+  </div>
+</div>

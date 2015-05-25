@@ -66,12 +66,19 @@ module PuavoAccounts
 
     helpers do
 
-      def show_error_message(user, attribute)
-        return unless user.errors[attribute]
+      def form_field(model, attribute)
+        @user = model
+        @attr = attribute
+        @errors = []
 
-        @errors = user.errors[attribute]
+        @form_group_class = "form-group"
 
-        erb :error_message
+        if @user.errors[attribute]
+          @errors = @user.errors[attribute]
+          @form_group_class += " has-error"
+        end
+
+        erb :form_field
 
       end
 
