@@ -2,7 +2,7 @@ Source: puavo-accounts
 Section: admin
 Priority: extra
 Maintainer: Jouni Korhonen <jouni.korhonen@opinsys.fi>
-Build-Depends: debhelper (>= 8), ruby2.0, ruby2.0-dev, ruby-bundler
+Build-Depends: debhelper (>= 8), ruby2.0, ruby2.0-dev, ruby-bundler, libssl-dev
 Standards-Version: 0.0.1
 Homepage: https://github.com/opinsys/puavo-accounts/
 
