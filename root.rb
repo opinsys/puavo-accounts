@@ -69,10 +69,11 @@ module PuavoAccounts
 
     helpers do
 
-      def form_field(model, attribute)
+      def form_field(model, attribute, type)
         @user = model
         @attr = attribute
         @errors = []
+        @type = type
         @name = model.html_attribute(attribute)
         @css_id = model.css_id(attribute)
         @value = model.data[attribute]
