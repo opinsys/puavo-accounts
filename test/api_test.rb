@@ -37,6 +37,15 @@ describe PuavoAccounts::Root do
   describe "when register new user" do
 
     before do
+      jwt_data = {
+        # Issued At
+        "iat" => Time.now.to_i.to_s,
+
+        "email" => "jane.doe@example.com"
+      }
+
+      @jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
+
       @rest_user = {
         "email"=>"jane.doe@example.com",
         "first_name"=>"Jane",
@@ -61,8 +70,27 @@ describe PuavoAccounts::Root do
       }
     end
 
+    it "show error message if jwt is invalid" do
+      get "/register/user/asdfsdfsdfsdfsdf0934023sdfs0df9w0"
+
+      last_response.body.must_include "The link is invalid or has expired!"
+    end
+
+    it "show error message if jwt is too old" do
+      jwt_data = {
+        "iat" =>  (Time.now-60*60*25).to_i.to_s,
+
+        "email" => "jane.doe@example.com"
+      }
+
+      @jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
+
+      get "/register/user/#{ @jwt }"
+
+      last_response.body.must_include "The link is invalid or has expired!"
+    end
+
     it "render error if password doesn't match confirmation" do
-      @stub_validate = puavo_rest_stub_validate(@rest_user)
       @user_form.delete("user[password_confirmation]")
       post "/", @user_form
 

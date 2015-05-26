@@ -49,6 +49,16 @@ module PuavoAccounts
     end
 
     get "/register/user/:jwt" do
+      begin
+        jwt_data = JWT.decode(params[:jwt], CONFIG["jwt"]["secret"])
+      rescue JWT::DecodeError
+        return erb :invalid_jwt
+      end
+
+      if (Time.now-60*60*24).to_i > jwt_data.first["iat"].to_i
+        return erb :invalid_jwt
+      end
+
       @user = User.new()
 
       erb :new
