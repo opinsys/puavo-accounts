@@ -26,7 +26,7 @@ describe PuavoAccounts::Root do
       assert_equal 302, last_response.status
       assert_equal "jane.doe@example.com", $mailer.options[:to]
 
-      jwt = $mailer.options[:body].match("https://www.example.net/register/user/(.+)$")[1]
+      jwt = $mailer.options[:body].match("https://www.example.net/authenticate/(.+)$")[1]
       jwt_data = JWT.decode(jwt, "secret")
 
       assert_equal "jane.doe@example.com", jwt_data[0]["email"]
@@ -34,7 +34,7 @@ describe PuavoAccounts::Root do
 
   end
 
-  describe "when register new user" do
+  describe "authentication by jwt token" do
 
     before do
       jwt_data = {
@@ -71,7 +71,7 @@ describe PuavoAccounts::Root do
     end
 
     it "show error message if jwt is invalid" do
-      get "/register/user/asdfsdfsdfsdfsdf0934023sdfs0df9w0"
+      get "/authenticate/asdfsdfsdfsdfsdf0934023sdfs0df9w0"
 
       last_response.body.must_include "The link is invalid or has expired!"
     end

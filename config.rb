@@ -20,7 +20,8 @@ CONFIG = {
       "enable_starttls_auto" => false
     }
   },
-  "jwt" => "secret"
+  "jwt" => "secret",
+  "session_secret" => "foobar"
 }
 
 if ENV["RACK_ENV"] != "test"

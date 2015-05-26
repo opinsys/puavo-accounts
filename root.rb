@@ -12,6 +12,8 @@ module PuavoAccounts
 
   class Root < Sinatra::Base
 
+    enable :sessions
+    set :session_secret, CONFIG["session_secret"]
 
     register Sinatra::R18n
 
@@ -33,7 +35,7 @@ module PuavoAccounts
 
       jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
 
-      @register_url = "https://#{ CONFIG["puavo-rest"]["organisation_domain"] }/register/user/#{ jwt }"
+      @register_url = "https://#{ CONFIG["puavo-rest"]["organisation_domain"] }/authenticate/#{ jwt }"
 
       body = erb(:register_email_message, :layout => false)
 
@@ -48,7 +50,7 @@ module PuavoAccounts
       erb :register_email_complete
     end
 
-    get "/register/user/:jwt" do
+    get "/authenticate/:jwt" do
       begin
         jwt_data = JWT.decode(params[:jwt], CONFIG["jwt"]["secret"])
       rescue JWT::DecodeError
@@ -59,7 +61,18 @@ module PuavoAccounts
         return erb :invalid_jwt
       end
 
+      session[:email] = jwt_data.first["email"]
+
+
+      redirect "/register/user"
+    end
+
+    get "/register/user" do
       @user = User.new()
+
+      unless session[:email]
+        return "ERROR"
+      end
 
       erb :new
     end
