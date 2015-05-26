@@ -2,12 +2,12 @@ require_relative "helpers"
 
 describe PuavoAccounts::Root do
 
-  describe "user form" do
+  describe "email register form" do
 
-    it "test" do
+    it "will be respond 200" do
       assert_equal 200, 200
 
-      get "/new"
+      get "/register/email"
 
       assert_equal 200, last_response.status
     end
