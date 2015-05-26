@@ -60,24 +60,16 @@ module PuavoAccounts
         @user.add_error("password_confirmation", t.errors.password_confirmation.does_not_match)
       end
 
-      if not params["user"]["email"] or params["user"]["email"].empty?
-        @user.add_error("email", t.errors.email_empty)
-      end
-
       if not @user.valid? or not @user.errors.empty?
         return erb :new
       end
 
-      # Save user to redis
-      @user.redis_save
+      # FIXME redirect to the complete page
+      redirect "/successfylly"
+    end
 
-      confirm_url = "https://www.example.net/confirm/#{ @user.uuid }"
-      body = t.api.confirm.message(@user.data["first_name"], confirm_url )
-
-      # Send email
-      $mailer.send( :to => @user.data["email"],
-                    :subject => t.api.confirm.subject,
-                    :body => body )
+    get "/successfully" do
+      erb :successfully
     end
 
     get "/confirm/:uuid" do
