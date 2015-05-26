@@ -1,3 +1,5 @@
+<h2><%= t.views.new.title %></h2>
+
 <p><%= t.views.new.description %></p>
 <form action="/" role="form" method="post">
 
@@ -6,8 +8,6 @@
   <%= form_field(@user, "last_name", "text") %>
 
   <%= form_field(@user, "username", "text") %>
-
-  <%= form_field(@user, "email", "text") %>
 
   <%= form_field(@user, "telephone_number", "text") %>
 

@@ -1,6 +1,7 @@
 views:
   new:
-    description: Täytä lomakkeen tiedot luodaksesi käyttäjätunnus
+    title: Käyttäjätunnuksen rekisteröinti
+    description: Täytä lomakkeen tiedot ja valitse Tallenna. Tämän jälkeen käyttäjätunnusta voidaan käyttää lukiolaiskannettavassa. Huomaa, että ensimmäinen kirjautuminen toimii vain, jos kannettavassa on toimiva verkkoyhteys.
     first_name: Etunimi
     last_name: Sukunimi
     username: Käyttäjätunnus
