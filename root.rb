@@ -97,7 +97,7 @@ module PuavoAccounts
       session.delete(:email)
 
       # FIXME redirect to the complete page
-      redirect "/successfylly"
+      redirect "/successfully"
     end
 
     get "/successfully" do
