@@ -54,14 +54,14 @@ module PuavoAccounts
       erb :new
     end
 
-    post "/" do
+    post "/register/user" do
       @user = User.new(params["user"])
 
       if params["user"]["password"] != params["user"]["password_confirmation"]
         @user.add_error("password_confirmation", t.errors.password_confirmation.does_not_match)
       end
 
-      if not @user.valid? or not @user.errors.empty?
+      if not @user.save or not @user.errors.empty?
         return erb :new
       end
 

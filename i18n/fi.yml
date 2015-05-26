@@ -1,3 +1,12 @@
+errors:
+  password_confirmation:
+    does_not_match: Salasanan vahvistus ei täsmää!
+  by_code:
+    username_empty: Syötä käyttäjätunnuksesi. Tällä tunnuksella kirjaudut sisään lukiolaiskannettavaan.
+    first_name_empty: Tarvitsemme etunimesi.
+    last_name_empty: Tarvitsemme sukunimesi.
+    password_too_short: Salasanassa pitää olla vähintään kahdeksan (8) merkkiä!
+    username_not_allowed: Syöttämäsi tunnus on jo käytössä.
 views:
   new:
     title: Käyttäjätunnuksen rekisteröinti
