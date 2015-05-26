@@ -16,5 +16,9 @@ views:
     password: Salasana
     password_confirmation: Salasana vahvistus
     submit: Tallenna
+  register_email:
+    submit: Lähetä
+    title: Käyttäjätunnuksen rekisteröinti
+    description: Opinsysin lukiolaiskannettavan käyttämiseen tarvitaan Opinsys-järjestelmän käyttäjätunnus. Tämän palvelun kautta voit rekisteröidä oman käyttäjätunnuksesi. Rekisteröinti aloitetaan sähköpostiosoitteen lähettämisellä. Kirjoita sähköpostiosoitteesi ja valitse Lähetä.
 layout:
   title: Käyttäjätunnuksen luonti
