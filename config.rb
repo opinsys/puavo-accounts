@@ -12,6 +12,8 @@ CONFIG = {
     "username" => "test-user",
     "password" => "secret"
   },
+  "school_dns_for_users" => ["puavoId=1,ou=Groups,dc=edu,dc=hogwarts,dc=fi"],
+  "role_for_users" => ["student"],
   "smtp" => {
     "from" => "Opinsys <no-reply@opinsys.fi>",
     "via_options" => {
