@@ -38,7 +38,7 @@ module PuavoAccounts
       body = erb(:register_email_message, :layout => false)
 
       $mailer.send( :to => params["email"],
-                    :subject => t.register.email.subject,
+                    :subject => t.api.register_email.subject,
                     :body => body )
 
       redirect "register/email/complete"

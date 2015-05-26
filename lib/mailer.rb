@@ -7,7 +7,7 @@ module PuavoAccounts
     def initialize
       @options = { :via => :smtp }
       @options.merge!({
-                        :from => CONFIG["smtp"]["form"],
+                        :from => CONFIG["smtp"]["from"],
                         :via_options => {
                           :address => CONFIG["smtp"]["via_options"]["address"],
                           :port => CONFIG["smtp"]["via_options"]["port"],
