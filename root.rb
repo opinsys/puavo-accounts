@@ -94,6 +94,8 @@ module PuavoAccounts
         return erb :new
       end
 
+      session.delete(:email)
+
       # FIXME redirect to the complete page
       redirect "/successfylly"
     end
