@@ -16,6 +16,9 @@ views:
     password: Salasana
     password_confirmation: Salasana vahvistus
     submit: Tallenna
+  register_email_complete:
+    title: Käyttäjätunnuksen rekisteröinti
+    description: Sähköpostiisi lähetettiin viesti, jossa kerrotaan kuinka jatkat käyttäjätunnuksesi rekisteröintiä.
   register_email:
     submit: Lähetä
     title: Käyttäjätunnuksen rekisteröinti

@@ -43,6 +43,7 @@ module PuavoAccounts
 
       redirect "register/email/complete"
     end
+
     get "/register/email/complete" do
       erb :register_email_complete
     end
