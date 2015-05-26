@@ -23,7 +23,7 @@ module PuavoAccounts
                                       :pass => CONFIG["puavo-rest"]["password"])
         .with_headers("Host" => CONFIG["puavo-rest"]["organisation_domain"])
         .post(CONFIG["puavo-rest"]["server"] + "/v3/users",
-              :json => self.data )
+              :json => user_data_with_school(self.data) )
 
       case rest_response.status
       when 200
@@ -71,6 +71,13 @@ module PuavoAccounts
 
     def generate_uuid
       @uuid = (0...50).map{ UUID_CHARS[rand(UUID_CHARS.size)] }.join
+    end
+
+    def user_data_with_school(user_data)
+      user_data["school_dns"] = CONFIG["school_dns_for_users"]
+      user_data["roles"] = CONFIG["role_for_users"]
+
+      return user_data
     end
   end
 end
