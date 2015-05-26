@@ -19,7 +19,7 @@ describe PuavoAccounts::Root do
       stub_mailer
     end
 
-    it "will be sen an email to user" do
+    it "will be send an email to user" do
       post "/register/email", {
         "email" => "jane.doe@example.com"
       }
@@ -85,32 +85,50 @@ describe PuavoAccounts::Root do
 
       @jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
 
-      get "/register/user/#{ @jwt }"
+      get "/authenticate/#{ @jwt }"
 
       last_response.body.must_include "The link is invalid or has expired!"
     end
 
-    it "render error if password doesn't match confirmation" do
-      @user_form.delete("user[password_confirmation]")
-      post "/", @user_form
+    it "redirect to use form jwt is valid" do
+      get "/authenticate/#{ @jwt }"
 
-      last_response.body.must_include "Password doesn't match confirmation"
+      assert last_response.redirect?
     end
   end
 
-  describe "when the user registration to confirm" do
-
+  describe "when register new user" do
     before do
+      jwt_data = {
+        # Issued At
+        "iat" => Time.now.to_i.to_s,
+
+        "email" => "jane.doe@example.com"
+      }
+      @jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
+      get "/authenticate/#{ @jwt }"
+    end
+
+    it "will be see user form" do
+      get "/register/user"
+
+      last_response.body.must_include "Register new user"
+    end
+
+    it "will be create new user" do
+      @user_form = {
+        "user[first_name]" => "Jane",
+        "user[last_name]" => "Doe",
+        "user[username" => "jane.doe",
+        "user[telephone_number]" => "1234567",
+        "user[locale]" => "en_US.UTF-8",
+        "user[password]" => "secret",
+        "user[password_confirmation]" => "secret"
+      }
+
       @stub_create_user = stub_request(:post, "http://127.0.0.1/v3/users").
         with(:headers => {'Host'=>'www.example.net'},
-             :body => {
-               "first_name" => "Jane",
-               "last_name" => "Doe",
-               "email" => "jane.doe@example.com",
-               "username" => "jane.doe",
-               "telephone_number" => "1234567",
-               "locale" => "en_US",
-               "password" => "secret" }).
+             :body => "{\"first_name\":\"Jane\",\"last_name\":\"Doe\",\"username\":\"jane.doe\",\"telephone_number\":\"1234567\",\"locale\":\"en_US.UTF-8\",\"password\":\"secret\",\"email\":\"test@tast.fi\",\"school_dns\":[\"puavoId=1,ou=Groups,dc=edu,dc=hogwarts,dc=fi\"],\"roles\":[\"student\"]}").
         to_return( :status => 200,
                    :body => {
                      "dn" => "puavoId=55,ou=People,dc=edu,dc=example,dc=fi",
@@ -141,23 +159,14 @@ describe PuavoAccounts::Root do
                      "external_service_path_prefix" => "/"
                    }.to_json, :headers => {})
 
-      @user = PuavoAccounts::User.new({
-        "first_name" => "Jane",
-        "last_name" => "Doe",
-        "email" => "jane.doe@example.com",
-        "username" => "jane.doe",
-        "telephone_number" => "1234567",
-        "locale" => "en_US",
-        "password" => "secret",
-        "password_confirmation" => "secret"
-      })
-      @user.redis_save
+      post "/register/user", @user_form
+      
+      assert_requested(@stub_create_user)
 
-      @uuid = @user.uuid
-
-      get "/confirm/#{ @uuid }"
-
+      assert last_response.redirect?
     end
+
+
 
     it "send create request to the puavo-rest" do
       assert_requested(@stub_create_user)

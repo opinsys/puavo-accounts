@@ -78,7 +78,13 @@ module PuavoAccounts
     end
 
     post "/register/user" do
+      unless session[:email]
+        return "ERROR"
+      end
+
       @user = User.new(params["user"])
+
+      @user.data["email"] = session["email"]
 
       if params["user"]["password"] != params["user"]["password_confirmation"]
         @user.add_error("password_confirmation", t.errors.password_confirmation.does_not_match)
