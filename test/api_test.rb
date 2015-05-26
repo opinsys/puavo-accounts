@@ -68,6 +68,7 @@ describe PuavoAccounts::Root do
 
       last_response.body.must_include "Password doesn't match confirmation"
     end
+  end
 
   describe "when the user registration to confirm" do
 
