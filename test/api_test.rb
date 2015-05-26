@@ -13,6 +13,27 @@ describe PuavoAccounts::Root do
     end
   end
 
+  describe "when register new email" do
+
+    before do
+      stub_mailer
+    end
+
+    it "will be sen an email to user" do
+      post "/register/email", {
+        "email" => "jane.doe@example.com"
+      }
+      assert_equal 302, last_response.status
+      assert_equal "jane.doe@example.com", $mailer.options[:to]
+
+      jwt = $mailer.options[:body].match("https://www.example.net/register/user/(.+)$")[1]
+      jwt_data = JWT.decode(jwt, "secret")
+
+      assert_equal "jane.doe@example.com", jwt_data[0]["email"]
+    end
+
+  end
+
   describe "when register new user" do
 
     before do

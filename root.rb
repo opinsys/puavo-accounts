@@ -1,4 +1,5 @@
 require "json"
+require "jwt"
 require "sinatra/base"
 require "sinatra/json"
 require "sinatra/r18n"
@@ -16,6 +17,34 @@ module PuavoAccounts
 
     get "/" do
       "puavo accounts"
+    end
+
+    get "/register/email" do
+      erb :register_email
+    end
+
+    post "/register/email" do
+      jwt_data = {
+        # Issued At
+        "iat" => Time.now.to_i.to_s,
+
+        "email" => params["email"]
+      }
+
+      jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
+
+      @register_url = "https://#{ CONFIG["puavo-rest"]["organisation_domain"] }/register/user/#{ jwt }"
+
+      body = erb(:register_email_message, :layout => false)
+
+      $mailer.send( :to => params["email"],
+                    :subject => t.register.email.subject,
+                    :body => body )
+
+      redirect "register/email/complete"
+    end
+    get "/register/email/complete" do
+      erb :register_email_complete
     end
 
     get "/new" do
