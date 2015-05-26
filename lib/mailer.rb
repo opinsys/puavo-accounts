@@ -6,7 +6,13 @@ module PuavoAccounts
 
     def initialize
       @options = { :via => :smtp }
-      @options.merge!(CONFIG["smtp"])
+      @options.merge!({
+                        :from => CONFIG["smtp"]["form"],
+                        :via_options => {
+                          :address => CONFIG["smtp"]["via_options"]["address"],
+                          :port => CONFIG["smtp"]["via_options"]["port"],
+                          :enable_starttls_auto => CONFIG["smtp"]["via_options"]["enable_starttls_auto"]
+                        }})
     end
 
     def send(args)

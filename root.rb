@@ -47,7 +47,7 @@ module PuavoAccounts
       erb :register_email_complete
     end
 
-    get "/new" do
+    get "/register/user/:jwt" do
       @user = User.new()
 
       erb :new

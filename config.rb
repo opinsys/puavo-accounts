@@ -13,11 +13,11 @@ CONFIG = {
     "password" => "secret"
   },
   "smtp" => {
-    :from => "Opinsys <no-reply@opinsys.fi>",
-    :via_options => {
-      :address => "localhost",
-      :port => 25,
-      :enable_starttls_auto => false
+    "from" => "Opinsys <no-reply@opinsys.fi>",
+    "via_options" => {
+      "address" => "localhost",
+      "port" => 25,
+      "enable_starttls_auto" => false
     }
   },
   "jwt" => "secret"
