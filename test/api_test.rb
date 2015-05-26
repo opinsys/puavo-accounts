@@ -111,7 +111,7 @@ describe PuavoAccounts::Root do
 
       @stub_create_user = stub_request(:post, "http://127.0.0.1/v3/users").
         with(:headers => {'Host'=>'www.example.net'},
-             :body => "{\"first_name\":\"Jane\",\"last_name\":\"Doe\",\"username\":\"jane.doe\",\"telephone_number\":\"1234567\",\"locale\":\"en_US.UTF-8\",\"password\":\"secret\",\"email\":\"test@tast.fi\",\"school_dns\":[\"puavoId=1,ou=Groups,dc=edu,dc=hogwarts,dc=fi\"],\"roles\":[\"student\"]}").
+             :body => "{\"first_name\":\"Jane\",\"last_name\":\"Doe\",\"username\":\"jane.doe\",\"telephone_number\":\"1234567\",\"locale\":\"en_US.UTF-8\",\"password\":\"secret\",\"email\":\"jane.doe@example.com\",\"school_dns\":[\"puavoId=1,ou=Groups,dc=edu,dc=hogwarts,dc=fi\"],\"roles\":[\"student\"]}").
         to_return( :status => 200,
                    :body => {
                      "dn" => "puavoId=55,ou=People,dc=edu,dc=example,dc=fi",
