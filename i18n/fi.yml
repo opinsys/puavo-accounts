@@ -40,6 +40,10 @@ views:
     header: "Viimeistele käyttäjätunnuksen rekisteröinti seuraavan linkin kautta:"
     notify: "Mikäi et ole syöttänyt sähköpostiosoitetta www.lukiolaiskannettava.fi sivustolle, tämä viesti on aiheeton."
     footer: "Lisätietoja http://www.lukiolaiskannettava.fi"
+  invalid_jwt:
+    description: Linkki on virheellinen tai se on vanhentunut!
+  successfully:
+    description: Käyttäjätunnuksen luonti onnistui!
 api:
   register_email:
     subject: Käyttäjätunnus lukiolaiskannettavaan
