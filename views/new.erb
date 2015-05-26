@@ -2,7 +2,9 @@
 
 <p><%= t.views.new.description %></p>
 
-<p class="text-danger"><%= t.views.new.email_unique_error(session[:email]) %></p>
+<% if not @user.email_error? %>
+  <p class="text-danger"><%= t.views.new.email_unique_error(session[:email]) %></p>
+<% end %>
 
 <form action="/register/user" role="form" method="post">
 

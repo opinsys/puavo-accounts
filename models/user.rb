@@ -39,6 +39,12 @@ module PuavoAccounts
       end
     end
 
+    def email_error?
+      return true if @errors["email"].nil? || @errors["email"].empty?
+
+      return false
+    end
+
     def add_error(attribute, message)
       unless @errors[attribute]
         @errors[attribute] = []
