@@ -1,4 +1,3 @@
-require 'redis'
 require 'json'
 require 'http'
 
@@ -38,49 +37,6 @@ module PuavoAccounts
       else
         raise "Can't connect to puavo-rest server"
       end
-
-      return false
-
-    end
-
-    def save
-      # FIXME save request to puavo-rest
-      rest_response = HTTP.with_headers("Host" => CONFIG["puavo-rest"]["organisation_domain"])
-        .post(CONFIG["puavo-rest"]["server"] + "/v3/users",
-              :json => self.data )
-
-      case rest_response.status
-      when 200
-        @errors = nil
-        return true
-      when 400
-        # FIXME
-      else
-        raise "Can't connect to puavo-rest server"
-      end
-    end
-
-    def redis_fetch(uuid)
-      @uuid = uuid
-      redis = redis_connection
-      get_data = redis.get(uuid_key)
-
-      if get_data.nil?
-        false
-      else
-        @data = JSON.parse(get_data)
-      end
-    end
-
-    def redis_save
-      redis = redis_connection
-      redis.set(uuid_key, @data.to_json)
-      redis.expire(uuid_key, EXPIRE)
-    end
-
-    def redis_destroy
-      redis = redis_connection
-      redis.del(uuid_key)
     end
 
     def add_error(attribute, message)
