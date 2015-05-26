@@ -61,39 +61,6 @@ describe PuavoAccounts::Root do
       }
     end
 
-    it "will be sent an email to user" do
-      @stub_validate = puavo_rest_stub_validate(@rest_user)
-      post "/", @user_form
-
-      assert_equal 200, last_response.status
-
-      assert_equal "jane.doe@example.com", $mailer.options[:to]
-    end
-
-    it "user information has been stored in the database" do
-      @stub_validate = puavo_rest_stub_validate(@rest_user)
-      post "/", @user_form
-
-      assert_equal 200, last_response.status
-
-      uuid = $mailer.options[:body].match("https://www.example.net/confirm/(.+)$")[1]
-      user = PuavoAccounts::User.new
-      user.redis_fetch(uuid)
-
-      assert_equal user.data["first_name"], "Jane"
-      assert_equal user.data["last_name"], "Doe"
-      assert_equal user.data["email"], "jane.doe@example.com"
-    end
-
-    it "validate user information by puavo-rest" do
-      @stub_validate = puavo_rest_stub_validate(@rest_user)
-      post "/", @user_form
-
-      assert_equal 200, last_response.status
-
-      assert_requested(@stub_validate)
-    end
-
     it "render error if password doesn't match confirmation" do
       @stub_validate = puavo_rest_stub_validate(@rest_user)
       @user_form.delete("user[password_confirmation]")
@@ -101,17 +68,6 @@ describe PuavoAccounts::Root do
 
       last_response.body.must_include "Password doesn't match confirmation"
     end
-
-    it "render error if email is empty" do
-      @user_form.delete("user[email]")
-      @rest_user.delete("email")
-      @stub_validate = puavo_rest_stub_validate(@rest_user)
-
-      post "/", @user_form
-
-      last_response.body.must_include "Email is required!"
-    end
-  end
 
   describe "when the user registration to confirm" do
 
@@ -178,17 +134,6 @@ describe PuavoAccounts::Root do
       assert_requested(@stub_create_user)
     end
 
-    it "remove user information from the database" do
-      assert_equal @user.redis_fetch(@uuid), false
-    end
-  end
-
-  def puavo_rest_stub_validate(user)
-    stub_request(:post, "http://127.0.0.1/v3/users_validate").
-      with(:headers => {'Host'=>'www.example.net', 'Authorization'=>'Basic dGVzdC11c2VyOnNlY3JldA=='},
-           :body => user).
-      to_return( :status => 200,
-                 :body => { :status => 'successfully' }.to_json, :headers => {})
   end
 
   def stub_mailer
