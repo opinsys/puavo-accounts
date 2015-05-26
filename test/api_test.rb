@@ -99,23 +99,6 @@ describe PuavoAccounts::Root do
 
   describe "when register new user" do
     before do
-      jwt_data = {
-        # Issued At
-        "iat" => Time.now.to_i.to_s,
-
-        "email" => "jane.doe@example.com"
-      }
-      @jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
-      get "/authenticate/#{ @jwt }"
-    end
-
-    it "will be see user form" do
-      get "/register/user"
-
-      last_response.body.must_include "Register new user"
-    end
-
-    it "will be create new user" do
       @user_form = {
         "user[first_name]" => "Jane",
         "user[last_name]" => "Doe",
@@ -159,6 +142,23 @@ describe PuavoAccounts::Root do
                      "external_service_path_prefix" => "/"
                    }.to_json, :headers => {})
 
+      jwt_data = {
+        # Issued At
+        "iat" => Time.now.to_i.to_s,
+
+        "email" => "jane.doe@example.com"
+      }
+      @jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
+      get "/authenticate/#{ @jwt }"
+    end
+
+    it "will be see user form" do
+      get "/register/user"
+
+      last_response.body.must_include "Register new user"
+    end
+
+    it "will be create new user" do
       post "/register/user", @user_form
       
       assert_requested(@stub_create_user)
@@ -166,10 +166,11 @@ describe PuavoAccounts::Root do
       assert last_response.redirect?
     end
 
+    it "render error if password doesn't match confirmation" do
+      @user_form.delete("user[password_confirmation]")
+      post "/register/user", @user_form
 
-
-    it "send create request to the puavo-rest" do
-      assert_requested(@stub_create_user)
+      last_response.body.must_include "Password doesn't match confirmation!"
     end
 
   end
