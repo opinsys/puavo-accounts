@@ -32,22 +32,6 @@ describe PuavoAccounts::User do
       end
     end
 
-    describe "and save user to redis" do
-
-      it "user data must remain the same" do
-        user = PuavoAccounts::User.new(user_data)
-        user.redis_save
-
-        assert user.uuid != nil
-
-        redis_user = PuavoAccounts::User.new
-        redis_user.redis_fetch(user.uuid)
-
-        assert_equal redis_user.data["first_name"], "Jane"
-        assert_equal redis_user.data["last_name"], "Doe"
-        assert_equal redis_user.data["email"], "jane.doe@example.com"
-      end
-    end
   end
 
   # FIXME test expire time
