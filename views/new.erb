@@ -1,6 +1,9 @@
 <h2><%= t.views.new.title %></h2>
 
 <p><%= t.views.new.description %></p>
+
+<p class="text-danger"><%= t.views.new.email_unique_error(session[:email]) %></p>
+
 <form action="/register/user" role="form" method="post">
 
   <%= form_field(@user, "first_name", "text") %>

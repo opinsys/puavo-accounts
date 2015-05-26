@@ -7,8 +7,10 @@ errors:
     last_name_empty: Tarvitsemme sukunimesi.
     password_too_short: Salasanassa pitää olla vähintään kahdeksan (8) merkkiä!
     username_not_allowed: Syöttämäsi tunnus on jo käytössä.
+    username_not_unique: Käyttäjätunnus on jo käytössä
 views:
   new:
+    email_unique_error: "Sähköpostiosoitteellasi (%1) on jo luotu käyttäjätunnus."
     title: Käyttäjätunnuksen rekisteröinti
     description: Täytä lomakkeen tiedot ja valitse Tallenna. Tämän jälkeen käyttäjätunnusta voidaan käyttää lukiolaiskannettavassa. Huomaa, että ensimmäinen kirjautuminen toimii vain, jos kannettavassa on toimiva verkkoyhteys.
     first_name: Etunimi
