@@ -17,13 +17,11 @@ module PuavoAccounts
       @uuid = nil
     end
 
-    def valid?
+    def save
       self.data.delete("password_confirmation")
-      rest_response = HTTP.basic_auth(:user => CONFIG["puavo-rest"]["username"],
-                                      :pass => CONFIG["puavo-rest"]["password"])
-        .with_headers("Host" => CONFIG["puavo-rest"]["organisation_domain"])
-        .post(CONFIG["puavo-rest"]["server"] + "/v3/users_validate",
-              :form => self.data )
+      rest_response = HTTP.with_headers("Host" => CONFIG["puavo-rest"]["organisation_domain"])
+        .post(CONFIG["puavo-rest"]["server"] + "/v3/users",
+              :json => self.data )
 
       case rest_response.status
       when 200
@@ -35,7 +33,7 @@ module PuavoAccounts
           end
         end
       else
-        raise "Can't connect to puavo-rest server"
+        raise "Unknow status code"
       end
     end
 
@@ -63,13 +61,8 @@ module PuavoAccounts
       return "puavo-accounts:user:#{ @uuid }"
     end
 
-    def redis_connection
-      Redis.new( :db => 6 )
-    end
-
     def generate_uuid
       @uuid = (0...50).map{ UUID_CHARS[rand(UUID_CHARS.size)] }.join
     end
-
   end
 end
