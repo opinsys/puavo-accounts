@@ -28,9 +28,7 @@ module PuavoAccounts
 
     def save
       self.data.delete("password_confirmation")
-      rest_response = HTTP.basic_auth(:user => CONFIG["puavo-rest"]["username"],
-                                      :pass => CONFIG["puavo-rest"]["password"])
-        .with_headers("Host" => CONFIG["puavo-rest"]["organisation_domain"])
+      rest_response = rest_request
         .post(CONFIG["puavo-rest"]["server"] + "/v3/users",
               :json => user_data_with_school(self.data) )
 
@@ -103,6 +101,12 @@ module PuavoAccounts
       user_data["roles"] = CONFIG["role_for_users"]
 
       return user_data
+    end
+
+    def rest_request
+      HTTP.basic_auth(:user => CONFIG["puavo-rest"]["username"],
+                      :pass => CONFIG["puavo-rest"]["password"])
+        .with_headers("Host" => CONFIG["puavo-rest"]["organisation_domain"])
     end
   end
 end
