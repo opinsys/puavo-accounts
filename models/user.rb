@@ -11,8 +11,17 @@ module PuavoAccounts
       memo + range.to_a
     end
 
+    DATA_ATTRIBUTES = [ "first_name",
+                        "last_name",
+                        "username",
+                        "telephone_number",
+                        "locale",
+                        "password",
+                        "password_confirmation" ]
+
+
     def initialize(user_data = {})
-      @data = user_data
+      @data = user_data.select { |attr| DATA_ATTRIBUTES.include?(attr) }
       @errors = {}
       @uuid = nil
     end

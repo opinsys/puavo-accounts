@@ -5,7 +5,8 @@ describe PuavoAccounts::User do
   user_data = {
     "first_name" => "Jane",
     "last_name" => "Doe",
-    "email" => "jane.doe@example.com"
+    "username" => "jane.doe",
+    "foobar" => "barfoo"
   }
 
 
@@ -28,7 +29,8 @@ describe PuavoAccounts::User do
 
         assert_equal user.data["first_name"], "Jane"
         assert_equal user.data["last_name"], "Doe"
-        assert_equal user.data["email"], "jane.doe@example.com"
+        assert_equal user.data["username"], "jane.doe"
+        assert_nil user.data["foobar"]
       end
     end
 
