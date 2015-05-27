@@ -55,7 +55,7 @@ module PuavoAccounts
           end
 
           if @errors.empty? and not attribute_errors.empty?
-            raise "Unknown errors: #{ attribute_errors }"
+            raise "Unknown attribute validation errors: #{ attribute_errors }"
           end
         else
           raise "Unknown server error: #{ res_errors.inspect }"
