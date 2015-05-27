@@ -38,13 +38,29 @@ module PuavoAccounts
       when 200
         return true
       when 400
-        rest_response.parse["error"]["meta"]["invalid_attributes"].each do |attribute, errors|
-          errors.each do |error|
-            self.add_error(attribute, R18n.t.errors.by_code[error["code"]])
+        res_errors = rest_response.parse["error"]
+
+        if res_errors["code"] == "ValidationError"
+          attribute_errors = {}
+          res_errors["meta"]["invalid_attributes"].each do |attribute, errors|
+            if (DATA_ATTRIBUTES + ["email"]).include?(attribute)
+              errors.each do |error|
+                self.add_error(attribute, R18n.t.errors.by_code[error["code"]])
+              end
+            else
+              attribute_errors[attribute] = errors
+            end
           end
+
+          if not attribute_errors.empty?
+            raise "Unknown errors: #{ attribute_errors }"
+          end
+        else
+          raise "Unknown server error: #{ res_errors.inspect }"
         end
+
       else
-        raise "Unknow status code"
+        raise "Unknown status code: #{ rest_response.status }"
       end
     end
 
