@@ -50,7 +50,7 @@ module PuavoAccounts
             end
           end
 
-          if not attribute_errors.empty?
+          if @errors.empty? and not attribute_errors.empty?
             raise "Unknown errors: #{ attribute_errors }"
           end
         else
