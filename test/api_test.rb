@@ -109,6 +109,11 @@ describe PuavoAccounts::Root do
         "user[password_confirmation]" => "secret"
       }
 
+      @stub_add_legacy_role = stub_request(:post, "http://127.0.0.1/v3/schools/1/legacy_roles/2/members").
+        with(:headers => {'Host'=>'www.example.net'},
+             :body => { "username" => "jane.doe" }).
+        to_return( :status => 200 )
+
       @stub_create_user = stub_request(:post, "http://127.0.0.1/v3/users").
         with(:headers => {'Host'=>'www.example.net'},
              :body => "{\"first_name\":\"Jane\",\"last_name\":\"Doe\",\"username\":\"jane.doe\",\"telephone_number\":\"1234567\",\"locale\":\"en_US.UTF-8\",\"password\":\"secret\",\"email\":\"jane.doe@example.com\",\"school_dns\":[\"puavoId=1,ou=Groups,dc=edu,dc=hogwarts,dc=fi\"],\"roles\":[\"student\"]}").
@@ -162,6 +167,7 @@ describe PuavoAccounts::Root do
       post "/register/user", @user_form
       
       assert_requested(@stub_create_user)
+      assert_requested(@stub_add_legacy_role)
 
       assert last_response.redirect?
     end

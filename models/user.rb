@@ -34,6 +34,10 @@ module PuavoAccounts
 
       case rest_response.status
       when 200
+        unless self.set_legacy_role
+          raise "Couldn't set legacy role to user!"
+        end
+
         return true
       when 400
         res_errors = rest_response.parse["error"]
@@ -81,6 +85,24 @@ module PuavoAccounts
 
     def css_id(attribute)
       "user_#{ attribute }"
+    end
+
+    def set_legacy_role
+      school_id = CONFIG["legacy_role_school_id"]
+      legacy_role_id = CONFIG["legacy_role_id"]
+
+      url = CONFIG["puavo-rest"]["server"] + "/v3/schools/#{ school_id }/legacy_roles/#{ legacy_role_id }/members"
+
+      rest_response = rest_request
+        .post(url,
+              :form => { "username" => self.data["username"] } )
+
+      case rest_response.status
+      when 200
+        return true
+      else
+        return false
+      end
     end
 
     private
