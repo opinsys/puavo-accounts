@@ -12,7 +12,8 @@ views:
   new:
     email_unique_error: "Sähköpostiosoitteellasi (%1) on jo luotu käyttäjätunnus."
     title: Käyttäjätunnuksen rekisteröinti
-    description: Täytä lomakkeen tiedot ja valitse Tallenna. Tämän jälkeen käyttäjätunnusta voidaan käyttää lukiolaiskannettavassa. Huomaa, että ensimmäinen kirjautuminen toimii vain, jos kannettavassa on toimiva verkkoyhteys.
+    description1: Täytä ensin lomakkeen tiedot ja valitse Tallenna.
+    description2: Tämän jälkeen käyttäjätunnuksella voi kirjautua lukiolaiskannettavalle. Huomaa, että ensimmäinen kirjautuminen toimii vain, jos kannettavassa on toimiva verkkoyhteys.
     first_name: Etunimi
     last_name: Sukunimi
     username: Käyttäjätunnus
@@ -30,14 +31,14 @@ views:
     submit: Tallenna
   register_email_complete:
     title: Käyttäjätunnuksen rekisteröinti
-    description: Sähköpostiisi lähetettiin viesti, jossa kerrotaan kuinka jatkat käyttäjätunnuksesi rekisteröintiä.
+    description: Sähköpostiosoitteeseesi %1 lähetettiin viesti. Viesti sisältää ohjeet käyttäjätunnuksen rekisteröintiin.
   register_email:
     submit: Lähetä
     title: Käyttäjätunnuksen rekisteröinti
-    description: Opinsysin lukiolaiskannettavan käyttämiseen tarvitaan Opinsys-järjestelmän käyttäjätunnus. Tämän palvelun kautta voit rekisteröidä oman käyttäjätunnuksesi. Rekisteröinti aloitetaan sähköpostiosoitteen lähettämisellä. Kirjoita sähköpostiosoitteesi ja valitse Lähetä.
+    description: Opinsysin lukiolaiskannettavan käyttämiseen tarvitaan Opinsys-järjestelmän käyttäjätunnus. Tämän palvelun kautta voit rekisteröidä oman käyttäjätunnuksesi. Käyttäjätunnuksen rekisteröimiseksi tarvitaan sähköpostiosoite. Kirjoita sähköpostiosoitteesi alla olevaan tekstikenttään ja napsauta Lähetä-painiketta.
   register_email_message:
     hello: Hei!
-    header: "Viimeistele käyttäjätunnuksen rekisteröinti seuraavan linkin kautta:"
+    header: "Rekisteröi käyttäjätunnus luokiolaiskannettavalle seuraavan linkin kautta:"
     notify: "Mikäli et ole syöttänyt sähköpostiosoitetta www.lukiolaiskannettava.fi sivustolle, tämä viesti on aiheeton."
     footer: "Lisätietoja http://www.lukiolaiskannettava.fi"
   invalid_jwt:
@@ -46,6 +47,6 @@ views:
     description: Käyttäjätunnuksen luonti onnistui!
 api:
   register_email:
-    subject: Käyttäjätunnus lukiolaiskannettavaan
+    subject: Käyttäjätunnuksen rekisteröinti lukiolaiskannettavalle
 layout:
   title: Käyttäjätunnuksen luonti

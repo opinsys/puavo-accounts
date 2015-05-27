@@ -1,6 +1,8 @@
 <h2><%= t.views.new.title %></h2>
 
-<p><%= t.views.new.description %></p>
+<p><%= t.views.new.description1 %></p>
+
+<p><%= t.views.new.description2 %></p>
 
 <% if not @user.email_error? %>
   <p class="text-danger"><%= t.views.new.email_unique_error(session[:email]) %></p>
