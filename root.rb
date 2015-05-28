@@ -12,8 +12,12 @@ module PuavoAccounts
 
   class Root < Sinatra::Base
 
-    enable :sessions
-    set :session_secret, CONFIG["session_secret"]
+    use( Rack::Session::Cookie,
+         :key => 'puavo-accounts',
+         :domain => CONFIG["puavo-rest"]["organisation_domain"],
+         :path => '/accounts',
+         :expire_after => 86400,
+         :secret => CONFIG["session_secret"] )
 
     register Sinatra::R18n
 
