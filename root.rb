@@ -104,22 +104,6 @@ module PuavoAccounts
       erb :successfully
     end
 
-    get "/confirm/:uuid" do
-
-      # Get user from redis
-      @user = User.new
-      @user.redis_fetch(params[:uuid])
-
-      if @user.save
-        # render OK
-        @user.data.inspect
-        @user.redis_destroy
-      else
-        # render fail
-      end
-
-    end
-
     helpers do
 
       def form_field(model, attribute, type)
