@@ -40,7 +40,7 @@ module PuavoAccounts
                     :subject => t.api.register_email.subject,
                     :body => body )
 
-      redirect "/complete"
+      redirect to("/complete?email=#{params["email"]}")
     end
 
     get "/complete" do
