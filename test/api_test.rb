@@ -7,7 +7,7 @@ describe PuavoAccounts::Root do
     it "will be respond 200" do
       assert_equal 200, 200
 
-      get "/"
+      get "/accounts"
 
       assert_equal 200, last_response.status
     end
@@ -20,7 +20,7 @@ describe PuavoAccounts::Root do
     end
 
     it "will be send an email to user" do
-      post "/", {
+      post "/accounts", {
         "email" => "jane.doe@example.com"
       }
       assert_equal 302, last_response.status
@@ -71,7 +71,7 @@ describe PuavoAccounts::Root do
     end
 
     it "show error message if jwt is invalid" do
-      get "/authenticate/asdfsdfsdfsdfsdf0934023sdfs0df9w0"
+      get "/accounts/authenticate/asdfsdfsdfsdfsdf0934023sdfs0df9w0"
 
       last_response.body.must_include "The link is invalid or has expired!"
     end
@@ -85,13 +85,13 @@ describe PuavoAccounts::Root do
 
       @jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
 
-      get "/authenticate/#{ @jwt }"
+      get "/accounts/authenticate/#{ @jwt }"
 
       last_response.body.must_include "The link is invalid or has expired!"
     end
 
     it "redirect to use form jwt is valid" do
-      get "/authenticate/#{ @jwt }"
+      get "/accounts/authenticate/#{ @jwt }"
 
       assert last_response.redirect?
     end
@@ -154,17 +154,17 @@ describe PuavoAccounts::Root do
         "email" => "jane.doe@example.com"
       }
       @jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
-      get "/authenticate/#{ @jwt }"
+      get "/accounts/authenticate/#{ @jwt }"
     end
 
     it "will be see user form" do
-      get "/user"
+      get "/accounts/user"
 
       last_response.body.must_include "Register new user"
     end
 
     it "will be create new user" do
-      post "/user", @user_form
+      post "/accounts/user", @user_form
       
       assert_requested(@stub_create_user)
       assert_requested(@stub_add_legacy_role)
@@ -174,7 +174,7 @@ describe PuavoAccounts::Root do
 
     it "render error if password doesn't match confirmation" do
       @user_form.delete("user[password_confirmation]")
-      post "/user", @user_form
+      post "/accounts/user", @user_form
 
       last_response.body.must_include "Password doesn't match confirmation!"
     end

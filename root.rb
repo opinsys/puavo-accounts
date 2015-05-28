@@ -18,11 +18,11 @@ module PuavoAccounts
     register Sinatra::R18n
 
 
-    get "/" do
+    get "/accounts" do
       erb :register_email
     end
 
-    post "/" do
+    post "/accounts" do
       jwt_data = {
         # Issued At
         "iat" => Time.now.to_i.to_s,
@@ -40,14 +40,14 @@ module PuavoAccounts
                     :subject => t.api.register_email.subject,
                     :body => body )
 
-      redirect to("/complete?email=#{params["email"]}")
+      redirect to("/accounts/complete?email=#{params["email"]}")
     end
 
-    get "/complete" do
+    get "/accounts/complete" do
       erb :register_email_complete
     end
 
-    get "/authenticate/:jwt" do
+    get "/accounts/authenticate/:jwt" do
       begin
         jwt_data = JWT.decode(params[:jwt], CONFIG["jwt"]["secret"])
       rescue JWT::DecodeError
@@ -61,10 +61,10 @@ module PuavoAccounts
       session[:email] = jwt_data.first["email"]
 
 
-      redirect "/user"
+      redirect "/accounts/user"
     end
 
-    get "/user" do
+    get "/accounts/user" do
       @user = User.new()
 
       unless session[:email]
@@ -75,7 +75,7 @@ module PuavoAccounts
 
     end
 
-    post "/user" do
+    post "/accounts/user" do
       unless session[:email]
         return "ERROR"
       end
@@ -94,10 +94,10 @@ module PuavoAccounts
 
       session.delete(:email)
 
-      redirect "/successfully"
+      redirect "/accounts/successfully"
     end
 
-    get "/successfully" do
+    get "/accounts/successfully" do
       erb :successfully
     end
 
