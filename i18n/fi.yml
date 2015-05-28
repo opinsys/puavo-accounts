@@ -21,11 +21,11 @@ views:
     telephone_number: Puhelinnumero
     locale: Kieli
     locale_key:
-      fi_FI: Suomi
-      en_US: Englanti (Yhdysvallat)
-      sv_FI: Ruotsi (Suomi)
-      de_CH: Saksa (Sveitsi)
-      fr_CH: Ranska (Sveitsi)
+      fi_FI.UTF-8: Suomi
+      en_US.UTF-8: Englanti (Yhdysvallat)
+      sv_FI.UTF-8: Ruotsi (Suomi)
+      de_CH.UTF-8: Saksa (Sveitsi)
+      fr_CH.UTF-8: Ranska (Sveitsi)
     password: Salasana
     password_confirmation: Salasana vahvistus
     submit: Tallenna
