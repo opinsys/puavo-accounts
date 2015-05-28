@@ -12,6 +12,8 @@ module PuavoAccounts
 
   class Root < Sinatra::Base
 
+    enable :logging
+
     use( Rack::Session::Cookie,
          :key => 'puavo-accounts',
          :domain => CONFIG["puavo-rest"]["organisation_domain"],
@@ -21,6 +23,9 @@ module PuavoAccounts
 
     register Sinatra::R18n
 
+    before do
+      logger.info request.path
+    end
 
     get "/accounts" do
       erb :register_email
@@ -43,7 +48,7 @@ module PuavoAccounts
       $mailer.send( :to => params["email"],
                     :subject => t.api.register_email.subject,
                     :body => body )
-
+      logger.info "Send email to following address: #{ params["email"] }, IP-address: #{ request.ip }"
       redirect to("/accounts/complete?email=#{params["email"]}")
     end
 
