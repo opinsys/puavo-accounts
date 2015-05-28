@@ -1,11 +1,11 @@
 require "yaml"
 
 CONFIG = {
-  "locales" => [ "fi_FI",
-                 "en_US",
-                 "sv_FI",
-                 "de_CH",
-                 "fr_CH" ],
+  "locales" => [ "fi_FI.UTF-8",
+                 "en_US.UTF-8",
+                 "sv_FI.UTF-8",
+                 "de_CH.UTF-8",
+                 "fr_CH.UTF-8" ],
   "puavo-rest" => {
     "server" => "http://127.0.0.1",
     "organisation_domain" => "www.example.net",
