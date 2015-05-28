@@ -19,7 +19,6 @@ module PuavoAccounts
                         "password",
                         "password_confirmation" ]
 
-
     def initialize(user_data = {})
       @data = user_data.select { |attr| DATA_ATTRIBUTES.include?(attr) }
       @errors = {}

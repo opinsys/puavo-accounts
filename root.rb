@@ -17,15 +17,12 @@ module PuavoAccounts
 
     register Sinatra::R18n
 
-    get "/" do
-      "puavo accounts"
-    end
 
-    get "/register/email" do
+    get "/" do
       erb :register_email
     end
 
-    post "/register/email" do
+    post "/" do
       jwt_data = {
         # Issued At
         "iat" => Time.now.to_i.to_s,
@@ -35,7 +32,7 @@ module PuavoAccounts
 
       jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
 
-      @register_url = "https://#{ CONFIG["puavo-rest"]["organisation_domain"] }/authenticate/#{ jwt }"
+      @register_url = "https://#{ CONFIG["puavo-rest"]["organisation_domain"] }/accounts/authenticate/#{ jwt }"
 
       body = erb(:register_email_message, :layout => false)
 
@@ -43,10 +40,10 @@ module PuavoAccounts
                     :subject => t.api.register_email.subject,
                     :body => body )
 
-      redirect "register/email/complete"
+      redirect "/complete"
     end
 
-    get "/register/email/complete" do
+    get "/complete" do
       erb :register_email_complete
     end
 
@@ -64,10 +61,10 @@ module PuavoAccounts
       session[:email] = jwt_data.first["email"]
 
 
-      redirect "/register/user"
+      redirect "/user"
     end
 
-    get "/register/user" do
+    get "/user" do
       @user = User.new()
 
       unless session[:email]
@@ -75,9 +72,10 @@ module PuavoAccounts
       end
 
       erb :new
+
     end
 
-    post "/register/user" do
+    post "/user" do
       unless session[:email]
         return "ERROR"
       end
@@ -96,7 +94,6 @@ module PuavoAccounts
 
       session.delete(:email)
 
-      # FIXME redirect to the complete page
       redirect "/successfully"
     end
 

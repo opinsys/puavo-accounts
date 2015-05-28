@@ -7,7 +7,7 @@ describe PuavoAccounts::Root do
     it "will be respond 200" do
       assert_equal 200, 200
 
-      get "/register/email"
+      get "/"
 
       assert_equal 200, last_response.status
     end
@@ -20,13 +20,13 @@ describe PuavoAccounts::Root do
     end
 
     it "will be send an email to user" do
-      post "/register/email", {
+      post "/", {
         "email" => "jane.doe@example.com"
       }
       assert_equal 302, last_response.status
       assert_equal "jane.doe@example.com", $mailer.options[:to]
 
-      jwt = $mailer.options[:body].match("https://www.example.net/authenticate/(.+)$")[1]
+      jwt = $mailer.options[:body].match("https://www.example.net/accounts/authenticate/(.+)$")[1]
       jwt_data = JWT.decode(jwt, "secret")
 
       assert_equal "jane.doe@example.com", jwt_data[0]["email"]
@@ -158,13 +158,13 @@ describe PuavoAccounts::Root do
     end
 
     it "will be see user form" do
-      get "/register/user"
+      get "/user"
 
       last_response.body.must_include "Register new user"
     end
 
     it "will be create new user" do
-      post "/register/user", @user_form
+      post "/user", @user_form
       
       assert_requested(@stub_create_user)
       assert_requested(@stub_add_legacy_role)
@@ -174,7 +174,7 @@ describe PuavoAccounts::Root do
 
     it "render error if password doesn't match confirmation" do
       @user_form.delete("user[password_confirmation]")
-      post "/register/user", @user_form
+      post "/user", @user_form
 
       last_response.body.must_include "Password doesn't match confirmation!"
     end
