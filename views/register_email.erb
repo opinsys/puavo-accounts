@@ -1,12 +1,7 @@
 <p><%= t.views.register_email.description %></p>
 <form action="/accounts" role="form" method="post">
 
-  <div class="form-group">
-    <label class="control-label" for="email"><%= t.views.new.email %>:</label>
-    <div class="controls">
-      <input type="text" name="email" class="form-control" id="email">
-    </div>
-  </div>
+  <%= form_field(@user, "email", "text") %>
 
   <div class="form-group">
     <input class="btn primary" type="submit" value="<%= t.views.register_email.submit %>">

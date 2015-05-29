@@ -28,15 +28,26 @@ module PuavoAccounts
     end
 
     get "/accounts" do
+      @user = User.new
+
       erb :register_email
     end
 
     post "/accounts" do
+      @user = User.new(params["user"])
+
+      email = params["user"]["email"]
+
+      if email.nil? or email.empty?
+        @user.add_error("email", t.errors.invalid_email_address)
+        return erb :register_email
+      end
+
       jwt_data = {
         # Issued At
         "iat" => Time.now.to_i.to_s,
 
-        "email" => params["email"]
+        "email" => email
       }
 
       jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
@@ -46,14 +57,14 @@ module PuavoAccounts
       body = erb(:register_email_message, :layout => false)
 
       begin
-        $mailer.send( :to => params["email"],
+        $mailer.send( :to => email,
                       :subject => t.api.register_email.subject,
                       :body => body )
       rescue Net::SMTPSyntaxError, Net::SMTPFatalError
         return erb :error, :locals => { :error => t.errors.invalid_email_address }
       end
-      logger.info "Send email to following address: #{ params["email"] }, IP-address: #{ request.ip }"
-      redirect to("/accounts/complete?email=#{params["email"]}")
+      logger.info "Send email to following address: #{ email }, IP-address: #{ request.ip }"
+      redirect to("/accounts/complete?email=#{ email }")
     end
 
     get "/accounts/complete" do
