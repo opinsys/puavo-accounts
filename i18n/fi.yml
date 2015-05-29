@@ -1,6 +1,7 @@
 errors:
   password_confirmation:
     does_not_match: Salasanan vahvistus ei täsmää!
+  invalid_jwt: Linkki on virheellinen tai se on vanhentunut!
   by_code:
     username_empty: Syötä käyttäjätunnuksesi. Tällä tunnuksella kirjaudut sisään lukiolaiskannettavaan.
     first_name_empty: Tarvitsemme etunimesi.
@@ -40,8 +41,6 @@ views:
     header: "Rekisteröi käyttäjätunnus luokiolaiskannettavalle seuraavan linkin kautta:"
     notify: "Mikäli et ole syöttänyt sähköpostiosoitetta www.lukiolaiskannettava.fi sivustolle, tämä viesti on aiheeton."
     footer: "Lisätietoja http://www.lukiolaiskannettava.fi"
-  invalid_jwt:
-    description: Linkki on virheellinen tai se on vanhentunut!
   successfully:
     description: Käyttäjätunnuksen luonti onnistui!
 api:

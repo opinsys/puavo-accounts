@@ -60,11 +60,11 @@ module PuavoAccounts
       begin
         jwt_data = JWT.decode(params[:jwt], CONFIG["jwt"]["secret"])
       rescue JWT::DecodeError
-        return erb :invalid_jwt
+        return erb :error, :locals => { :error => t.errors.invalid_jwt }
       end
 
-      if (Time.now-60*60*24).to_i > jwt_data.first["iat"].to_i
-        return erb :invalid_jwt
+      if (Time.now).to_i > jwt_data.first["iat"].to_i
+        return erb :error, :locals => { :error => t.errors.invalid_jwt }
       end
 
       session[:email] = jwt_data.first["email"]
