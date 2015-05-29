@@ -3,7 +3,7 @@
 <p><%= t.views.new.description2 %></p>
 
 <% if not @user.email_error? %>
-  <p class="text-danger"><%= t.views.new.email_unique_error(session[:email]) %></p>
+  <p class="alert alert-dismissible alert-danger"><%= t.views.new.email_unique_error(session[:email]) %></p>
 <% end %>
 
 <form action="/accounts/user" role="form" method="post">
