@@ -63,7 +63,7 @@ module PuavoAccounts
         return erb :error, :locals => { :error => t.errors.invalid_jwt }
       end
 
-      if (Time.now).to_i > jwt_data.first["iat"].to_i
+      if (Time.now-60*60*24).to_i > jwt_data.first["iat"].to_i
         return erb :error, :locals => { :error => t.errors.invalid_jwt }
       end
 
