@@ -2,9 +2,9 @@
   <label class="control-label" for="user_<%= @attr %>"><%= t.views.new[@attr] %>:</label>
   <div class="controls">
     <input type="<%= @type %>" name="<%= @name %>" class="form-control" value="<%= @value %>" id="<%= @css_id %>">
-    <% @errors.each do |error| %>
+    <% if @error %>
       <span class="help-block">
-        <%= error %>
+        <%= @error %>
       </span>
     <% end %>
   </div>

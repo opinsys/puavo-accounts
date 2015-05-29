@@ -146,7 +146,7 @@ module PuavoAccounts
         @form_group_class = "form-group"
 
         if @user.errors[attribute]
-          @errors = @user.errors[attribute]
+          @error = @user.errors[attribute].first
           @form_group_class += " has-error"
         end
 
