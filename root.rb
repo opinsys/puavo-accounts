@@ -60,7 +60,7 @@ module PuavoAccounts
         $mailer.send( :to => email,
                       :subject => t.api.register_email.subject,
                       :body => body )
-      rescue Net::SMTPSyntaxError, Net::SMTPFatalError
+      rescue Net::SMTPSyntaxError, Net::SMTPFatalError, ArgumentError
         return erb :error, :locals => { :error => t.errors.invalid_email_address }
       end
       logger.info "Send email to following address: #{ email }, IP-address: #{ request.ip }"
