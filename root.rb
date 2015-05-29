@@ -97,7 +97,13 @@ module PuavoAccounts
         @user.add_error("password_confirmation", t.errors.password_confirmation.does_not_match)
       end
 
-      if not @user.save or not @user.errors.empty?
+      save_status = @user.save
+
+      if not @user.email_error?
+        return erb :error, :locals => { :error => t.views.new.email_unique_error(session[:email]) }
+      end
+
+      if not save_status or not @user.errors.empty?
         return erb :new
       end
 
