@@ -61,7 +61,8 @@ module PuavoAccounts
                       :subject => t.api.register_email.subject,
                       :body => body )
       rescue Net::SMTPSyntaxError, Net::SMTPFatalError, ArgumentError
-        return erb :error, :locals => { :error => t.errors.invalid_email_address }
+        @user.add_error("email", t.errors.invalid_email_address)
+        return erb :register_email
       end
       logger.info "Send email to following address: #{ email }, IP-address: #{ request.ip }"
       redirect to("/accounts/complete?email=#{ email }")
