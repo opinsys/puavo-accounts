@@ -32,7 +32,7 @@ views:
     submit: Tallenna
   register_email_complete:
     title: Käyttäjätunnuksen rekisteröinti
-    description: Sähköpostiosoitteeseesi %1 lähetettiin viesti. Viesti sisältää ohjeet käyttäjätunnuksen rekisteröintiin.
+    description: Sähköpostiosoitteeseesi <b>%1</b> lähetettiin viesti. Viesti sisältää ohjeet käyttäjätunnuksen rekisteröintiin.
   register_email:
     submit: Lähetä
     title: Käyttäjätunnuksen rekisteröinti
