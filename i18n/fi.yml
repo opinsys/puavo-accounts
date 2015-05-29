@@ -49,4 +49,4 @@ api:
   register_email:
     subject: Käyttäjätunnuksen rekisteröinti lukiolaiskannettavalle
 layout:
-  title: Käyttäjätunnuksen luonti
+  header_title: Lukiolaiskannettava
