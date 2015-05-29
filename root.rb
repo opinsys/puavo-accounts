@@ -77,7 +77,7 @@ module PuavoAccounts
       @user = User.new()
 
       unless session[:email]
-        return "ERROR"
+        return erb :error, :locals => { :error => t.errors.invalid_jwt }
       end
 
       erb :new
@@ -86,7 +86,7 @@ module PuavoAccounts
 
     post "/accounts/user" do
       unless session[:email]
-        return "ERROR"
+        return erb :error, :locals => { :error => t.errors.invalid_jwt }
       end
 
       @user = User.new(params["user"])
