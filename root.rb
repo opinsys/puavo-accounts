@@ -16,7 +16,6 @@ module PuavoAccounts
 
     use( Rack::Session::Cookie,
          :key => 'puavo-accounts',
-         :domain => CONFIG["puavo-rest"]["organisation_domain"],
          :path => '/accounts',
          :expire_after => 86400,
          :secret => CONFIG["session_secret"] )
