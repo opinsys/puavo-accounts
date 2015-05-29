@@ -45,9 +45,13 @@ module PuavoAccounts
 
       body = erb(:register_email_message, :layout => false)
 
-      $mailer.send( :to => params["email"],
-                    :subject => t.api.register_email.subject,
-                    :body => body )
+      begin
+        $mailer.send( :to => params["email"],
+                      :subject => t.api.register_email.subject,
+                      :body => body )
+      rescue Net::SMTPSyntaxError
+        return erb :error, :locals => { :error => t.errors.invalid_email_address }
+      end
       logger.info "Send email to following address: #{ params["email"] }, IP-address: #{ request.ip }"
       redirect to("/accounts/complete?email=#{params["email"]}")
     end
