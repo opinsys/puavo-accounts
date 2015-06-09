@@ -1,33 +1,47 @@
-prefix = /usr/local
+prefix ?= /usr/local
 sysconfdir = /etc
-installdir = /var/app/puavo-accounts
-$(INSTALL_PROGRAM)
+installdir = $(prefix)/lib/puavo-accounts
 
-BUNDLE = /usr/bin/bundle
 RUBY = /usr/bin/ruby2.0
+BUNDLE = $(RUBY) /usr/bin/bundle
 
 build:
-	$(RUBY) $(BUNDLE) install --deployment
+	$(BUNDLE) install --deployment
 
 update-gemfile-lock: clean
 	rm -f Gemfile.lock
-	GEM_HOME=.tmpgem $(RUBY) $(BUNDLE) install
+	GEM_HOME=.tmpgem $(BUNDLE) install
 	rm -rf .tmpgem
-	$(RUBY) $(BUNDLE) install --deployment
+	$(BUNDLE) install --deployment
 
 clean:
 	rm -rf .bundle vendor
+
+clean-for-install:
+		$(BUNDLE) install --deployment --without test
+		$(BUNDLE) clean
+
+install: clean-for-install
+	mkdir -p $(DESTDIR)$(installdir)
+	mkdir -p $(DESTDIR)$(sysconfdir)
+	cp -r *.*rb *.ru Gemfile* Makefile i18n lib models  public vendor views .bundle $(DESTDIR)$(installdir)
+
 
 install-build-dep:
 	mk-build-deps --install debian.default/control \
 		--tool "apt-get --yes --force-yes" --remove
 
-server:
-	$(RUBY) $(BUNDLE) exec puma
+deb:
+	rm -rf debian
+	cp -a debian.default debian
+	dpkg-buildpackage -us -uc
 
-serve-dev:
-	$(RUBY) $(BUNDLE) exec shotgun --host 0.0.0.0 --port 9494 --server puma
+server:
+	$(BUNDLE) exec puma --port 9494
+
+server-dev:
+	$(BUNDLE) exec shotgun --host 0.0.0.0 --port 9494 --server puma
 
 .PHONY: test
 test:
-	$(RUBY) $(BUNDLE) exec $(RUBY) test/all.rb
+	#$(BUNDLE) exec $(RUBY) test/all.rb

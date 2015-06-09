@@ -8,9 +8,9 @@ pre-start script
     chown puavo:puavo /run/puavo-accounts
 end script
 
-chdir /var/app/puavo-accounts
+chdir /usr/lib/puavo-accounts
 env RACK_ENV=production
 
-exec sudo -E -u puavo bundle exec puma --workers 4 --port 9494
+exec sudo -E -u puavo ruby2.0 /usr/bin/bundle exec puma --workers 4 --port 9494
 
 respawn

@@ -8,7 +8,7 @@ Homepage: https://github.com/opinsys/puavo-accounts/
 
 Package: puavo-accounts
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, make, ruby1.9.1, ruby-bundler (>= 1.3.5), puavo-client, fluentd (>= 0.10.40-3+opinsys1)
+Depends: ${shlibs:Depends}, ${misc:Depends}, make, ruby2.0, ruby-bundler (>= 1.3.5), puavo-client, fluentd (>= 0.10.40-3+opinsys1)
 Description: puavo-accounts
- Application for creating new account to the Puavo
+ Application for creating new accounts to the Puavo
 
