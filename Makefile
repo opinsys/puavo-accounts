@@ -44,4 +44,4 @@ server-dev:
 
 .PHONY: test
 test:
-	#$(BUNDLE) exec $(RUBY) test/all.rb
+	$(BUNDLE) exec $(RUBY) test/all.rb
