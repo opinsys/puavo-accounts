@@ -12,7 +12,7 @@ errors:
     username_not_unique: Käyttäjätunnus on jo käytössä
 views:
   new:
-    email_unique_error: "Sähköpostiosoitteellasi (%1) on jo luotu käyttäjätunnus."
+    email_unique_error: "Sähköpostiosoitteellasi (%1) on jo luotu käyttäjätunnus. <a href='https://lukiolaiskannettava.opinsys.fi/users/password/forgot'>Unohditko salasanasi?</a>"
     description1: Täytä ensin lomakkeen tiedot ja valitse Tallenna.
     description2: Tämän jälkeen käyttäjätunnuksella voi kirjautua lukiolaiskannettavalle. Huomaa, että ensimmäinen kirjautuminen toimii vain, jos kannettavassa on toimiva verkkoyhteys.
     first_name: Etunimi
