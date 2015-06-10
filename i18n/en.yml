@@ -1,53 +1,53 @@
 errors:
   password_confirmation:
-    does_not_match: Salasanan vahvistus ei täsmää!
-  invalid_jwt: Linkki on virheellinen tai se on vanhentunut!
-  invalid_email_address: Virheellinen sähköpostiosoite!
+    does_not_match: Passwords do not match!
+  invalid_jwt: The link has been expired or it is malformed!
+  invalid_email_address: Invalid email address!
   by_code:
-    username_empty: Syötä käyttäjätunnuksesi. Tällä tunnuksella kirjaudut sisään Lukiolaiskannettavaan.
-    first_name_empty: Tarvitsemme etunimesi.
-    last_name_empty: Tarvitsemme sukunimesi.
-    password_too_short: Salasanassa pitää olla vähintään kahdeksan (8) merkkiä!
-    username_not_allowed: Syöttämäsi tunnus on jo käytössä.
-    username_not_unique: Käyttäjätunnus on jo käytössä
+    username_empty: Insert username. This username is used to login into the Lukiolaiskannettava.
+    first_name_empty: Given name is required.
+    last_name_empty: Family name is required
+    password_too_short: The password must have at least 8 characters!
+    username_not_allowed: The username is already in use.
+    username_not_unique: The username is already in use.
 views:
   new:
-    email_unique_error: "Sähköpostiosoitteellasi (%1) on jo luotu käyttäjätunnus."
-    description1: Täytä ensin lomakkeen tiedot ja valitse Tallenna.
-    description2: Tämän jälkeen käyttäjätunnuksella voi kirjautua lukiolaiskannettavalle. Huomaa, että ensimmäinen kirjautuminen toimii vain, jos kannettavassa on toimiva verkkoyhteys.
-    first_name: Etunimi
-    last_name: Sukunimi
-    username: Käyttäjätunnus
-    email: Sähköpostiosoite
-    telephone_number: Puhelinnumero
-    locale: Kieli
+    email_unique_error: "An account (%1) has been already registered with this email"
+    description1: Fill the form and press save
+    description2: After saving you can login into the Lukiolaiskannettava. Please note that the initial login works only when the laptop has an Internet connection.
+    first_name: Given name
+    last_name: Family name
+    username: Username
+    email: Email
+    telephone_number: Telephone number
+    locale: Language
     locale_key:
-      fi_FI.UTF-8: Suomi
-      en_US.UTF-8: Englanti (Yhdysvallat)
-      sv_FI.UTF-8: Ruotsi (Suomi)
-      de_CH.UTF-8: Saksa (Sveitsi)
-      fr_CH.UTF-8: Ranska (Sveitsi)
-    password: Salasana
-    password_confirmation: Salasana vahvistus
-    submit: Tallenna
+      fi_FI.UTF-8: Finnish
+      en_US.UTF-8: English (US)
+      sv_FI.UTF-8: Swedish (FIN)
+      de_CH.UTF-8: German (CH)
+      fr_CH.UTF-8: French (CH)
+    password: Password
+    password_confirmation: Password confirmation
+    submit: Save
   register_email_complete:
-    title: Käyttäjätunnuksen rekisteröinti
-    description: Sähköpostiosoitteeseesi <b>%1</b> lähetettiin viesti. Viesti sisältää ohjeet käyttäjätunnuksen rekisteröintiin.
+    title: Opinsys Account Registration
+    description: Registration instructions has been sent to your email address <b>%1</b>.
   register_email:
-    submit: Lähetä
-    title: Käyttäjätunnuksen rekisteröinti
-    description: Opinsysin Lukiolaiskannettavan käyttämiseen tarvitaan Opinsys-järjestelmän käyttäjätunnus. Tämän palvelun kautta voit rekisteröidä oman käyttäjätunnuksesi. Käyttäjätunnuksen rekisteröimiseksi tarvitaan sähköpostiosoite. Kirjoita sähköpostiosoitteesi alla olevaan tekstikenttään ja valitse Lähetä-painike.
+    submit: Send
+    title: Opinsys Account Registration
+    description: Opinsys Lukiolaiskannettava requires an Opinsys Account which can be created through this service. To start please type in your email address here and press Send.
   register_email_message:
-    hello: Hei!
-    header: "Rekisteröi käyttäjätunnus luokiolaiskannettavalle seuraavan linkin kautta:"
-    notify: "Mikäli et ole syöttänyt sähköpostiosoitetta www.lukiolaiskannettava.fi sivustolle, tämä viesti on aiheeton."
-    footer: "Lisätietoja http://www.lukiolaiskannettava.fi"
+    hello: Hi!
+    header: "Register an account for Lukiolaiskannettava using this link:"
+    notify: "If you didn't submit your email address at www.lukiolaiskannettava.fi this message can be safely ignored."
+    footer: "More information at http://www.lukiolaiskannettava.fi"
   successfully:
-    description: Käyttäjätunnuksen luonti onnistui!
+    description: Account creation successful!
 api:
   register_email:
-    subject: Käyttäjätunnuksen rekisteröinti Lukiolaiskannettavalle
+    subject: Opinsys Account Registration for Lukiolaiskannettava
 layout:
   header_title: Lukiolaiskannettava
-  container_title: Käyttäjätunnuksen rekisteröinti
+  container_title: Opinsys Account registration
 
