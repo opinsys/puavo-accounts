@@ -4,7 +4,7 @@ errors:
   invalid_jwt: Linkki on virheellinen tai se on vanhentunut!
   invalid_email_address: Virheellinen sähköpostiosoite!
   by_code:
-    username_empty: Syötä käyttäjätunnuksesi. Tällä tunnuksella kirjaudut sisään lukiolaiskannettavaan.
+    username_empty: Syötä käyttäjätunnuksesi. Tällä tunnuksella kirjaudut sisään Lukiolaiskannettavaan.
     first_name_empty: Tarvitsemme etunimesi.
     last_name_empty: Tarvitsemme sukunimesi.
     password_too_short: Salasanassa pitää olla vähintään kahdeksan (8) merkkiä!
@@ -36,7 +36,7 @@ views:
   register_email:
     submit: Lähetä
     title: Käyttäjätunnuksen rekisteröinti
-    description: Opinsysin lukiolaiskannettavan käyttämiseen tarvitaan Opinsys-järjestelmän käyttäjätunnus. Tämän palvelun kautta voit rekisteröidä oman käyttäjätunnuksesi. Käyttäjätunnuksen rekisteröimiseksi tarvitaan sähköpostiosoite. Kirjoita sähköpostiosoitteesi alla olevaan tekstikenttään ja napsauta Lähetä-painiketta.
+    description: Opinsysin Lukiolaiskannettavan käyttämiseen tarvitaan Opinsys-järjestelmän käyttäjätunnus. Tämän palvelun kautta voit rekisteröidä oman käyttäjätunnuksesi. Käyttäjätunnuksen rekisteröimiseksi tarvitaan sähköpostiosoite. Kirjoita sähköpostiosoitteesi alla olevaan tekstikenttään ja valitse Lähetä-painike.
   register_email_message:
     hello: Hei!
     header: "Rekisteröi käyttäjätunnus luokiolaiskannettavalle seuraavan linkin kautta:"
@@ -46,7 +46,7 @@ views:
     description: Käyttäjätunnuksen luonti onnistui!
 api:
   register_email:
-    subject: Käyttäjätunnuksen rekisteröinti lukiolaiskannettavalle
+    subject: Käyttäjätunnuksen rekisteröinti Lukiolaiskannettavalle
 layout:
   header_title: Lukiolaiskannettava
   container_title: Käyttäjätunnuksen rekisteröinti
