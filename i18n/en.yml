@@ -1,0 +1,53 @@
+errors:
+  password_confirmation:
+    does_not_match: Salasanan vahvistus ei täsmää!
+  invalid_jwt: Linkki on virheellinen tai se on vanhentunut!
+  invalid_email_address: Virheellinen sähköpostiosoite!
+  by_code:
+    username_empty: Syötä käyttäjätunnuksesi. Tällä tunnuksella kirjaudut sisään Lukiolaiskannettavaan.
+    first_name_empty: Tarvitsemme etunimesi.
+    last_name_empty: Tarvitsemme sukunimesi.
+    password_too_short: Salasanassa pitää olla vähintään kahdeksan (8) merkkiä!
+    username_not_allowed: Syöttämäsi tunnus on jo käytössä.
+    username_not_unique: Käyttäjätunnus on jo käytössä
+views:
+  new:
+    email_unique_error: "Sähköpostiosoitteellasi (%1) on jo luotu käyttäjätunnus."
+    description1: Täytä ensin lomakkeen tiedot ja valitse Tallenna.
+    description2: Tämän jälkeen käyttäjätunnuksella voi kirjautua lukiolaiskannettavalle. Huomaa, että ensimmäinen kirjautuminen toimii vain, jos kannettavassa on toimiva verkkoyhteys.
+    first_name: Etunimi
+    last_name: Sukunimi
+    username: Käyttäjätunnus
+    email: Sähköpostiosoite
+    telephone_number: Puhelinnumero
+    locale: Kieli
+    locale_key:
+      fi_FI.UTF-8: Suomi
+      en_US.UTF-8: Englanti (Yhdysvallat)
+      sv_FI.UTF-8: Ruotsi (Suomi)
+      de_CH.UTF-8: Saksa (Sveitsi)
+      fr_CH.UTF-8: Ranska (Sveitsi)
+    password: Salasana
+    password_confirmation: Salasana vahvistus
+    submit: Tallenna
+  register_email_complete:
+    title: Käyttäjätunnuksen rekisteröinti
+    description: Sähköpostiosoitteeseesi <b>%1</b> lähetettiin viesti. Viesti sisältää ohjeet käyttäjätunnuksen rekisteröintiin.
+  register_email:
+    submit: Lähetä
+    title: Käyttäjätunnuksen rekisteröinti
+    description: Opinsysin Lukiolaiskannettavan käyttämiseen tarvitaan Opinsys-järjestelmän käyttäjätunnus. Tämän palvelun kautta voit rekisteröidä oman käyttäjätunnuksesi. Käyttäjätunnuksen rekisteröimiseksi tarvitaan sähköpostiosoite. Kirjoita sähköpostiosoitteesi alla olevaan tekstikenttään ja valitse Lähetä-painike.
+  register_email_message:
+    hello: Hei!
+    header: "Rekisteröi käyttäjätunnus luokiolaiskannettavalle seuraavan linkin kautta:"
+    notify: "Mikäli et ole syöttänyt sähköpostiosoitetta www.lukiolaiskannettava.fi sivustolle, tämä viesti on aiheeton."
+    footer: "Lisätietoja http://www.lukiolaiskannettava.fi"
+  successfully:
+    description: Käyttäjätunnuksen luonti onnistui!
+api:
+  register_email:
+    subject: Käyttäjätunnuksen rekisteröinti Lukiolaiskannettavalle
+layout:
+  header_title: Lukiolaiskannettava
+  container_title: Käyttäjätunnuksen rekisteröinti
+

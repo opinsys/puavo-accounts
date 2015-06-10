@@ -21,7 +21,7 @@ describe PuavoAccounts::Root do
 
     it "will be send an email to user" do
       post "/accounts", {
-        "email" => "jane.doe@example.com"
+        "user[email]" => "jane.doe@example.com"
       }
       assert_equal 302, last_response.status
       assert_equal "jane.doe@example.com", $mailer.options[:to]
@@ -73,7 +73,7 @@ describe PuavoAccounts::Root do
     it "show error message if jwt is invalid" do
       get "/accounts/authenticate/asdfsdfsdfsdfsdf0934023sdfs0df9w0"
 
-      last_response.body.must_include "The link is invalid or has expired!"
+      last_response.body.must_include "Linkki on virheellinen tai se on vanhentunut!"
     end
 
     it "show error message if jwt is too old" do
@@ -87,7 +87,7 @@ describe PuavoAccounts::Root do
 
       get "/accounts/authenticate/#{ @jwt }"
 
-      last_response.body.must_include "The link is invalid or has expired!"
+      last_response.body.must_include "Linkki on virheellinen tai se on vanhentunut!"
     end
 
     it "redirect to use form jwt is valid" do
@@ -160,7 +160,7 @@ describe PuavoAccounts::Root do
     it "will be see user form" do
       get "/accounts/user"
 
-      last_response.body.must_include "Register new user"
+      last_response.body.must_include "Käyttäjätunnuksen rekisteröinti"
     end
 
     it "will be create new user" do
@@ -176,7 +176,7 @@ describe PuavoAccounts::Root do
       @user_form.delete("user[password_confirmation]")
       post "/accounts/user", @user_form
 
-      last_response.body.must_include "Password doesn't match confirmation!"
+      last_response.body.must_include "Salasanan vahvistus ei täsmää!"
     end
 
   end
