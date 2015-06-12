@@ -28,7 +28,7 @@ views:
       de_CH.UTF-8: Saksa (Sveitsi)
       fr_CH.UTF-8: Ranska (Sveitsi)
     password: Salasana
-    password_confirmation: Salasana vahvistus
+    password_confirmation: Salasanan vahvistus
     submit: Tallenna
   register_email_complete:
     title: Käyttäjätunnuksen rekisteröinti
