@@ -10,6 +10,7 @@ errors:
     password_too_short: Salasanassa pitää olla vähintään kahdeksan (8) merkkiä!
     username_not_allowed: Syöttämäsi tunnus on jo käytössä.
     username_not_unique: Käyttäjätunnus on jo käytössä
+    username_invalid: Käyttäjätunnus sisältää virheellisiä merkkejä.  Sallittuja merkkejä ovat pienet kirjaimet, numerot sekä piste ja viiva merkit. Ensimmäisen merkin pitää olla kirjain.
 views:
   new:
     email_unique_error: "Sähköpostiosoitteellasi (%1) on jo luotu käyttäjätunnus. <a href='https://lukiolaiskannettava.opinsys.fi/users/password/forgot'>Unohditko salasanasi?</a>"

@@ -10,6 +10,7 @@ errors:
     password_too_short: The password must have at least 8 characters!
     username_not_allowed: The username is already in use.
     username_not_unique: The username is already in use.
+    username_invalid: Käyttäjätunnus sisältää virheellisiä merkkejä.  Sallittuja merkkejä ovat pienet kirjaimet, numerot sekä piste ja viiva merkit. Ensimmäisen merkin pitää olla kirjain.
 views:
   new:
     email_unique_error: "An account (%1) has been already registered with this email"
