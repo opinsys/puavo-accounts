@@ -1,3 +1,18 @@
+body {
+    font-family: "Lato","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+.topnav li,
+.topnav .navbar-brand
+{
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.navbar .selected {
+    color: black !important;
+}
+
 .jumbotron {
     background-image: url('/accounts/img/intro.jpg');
     background-size: 375px 100px;
