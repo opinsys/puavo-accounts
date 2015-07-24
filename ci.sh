@@ -3,7 +3,7 @@
 set -x
 set -eu
 
-sudo apt-get update
+#sudo apt-get update
 
 # Install build dependencies
 sudo make install-build-dep
