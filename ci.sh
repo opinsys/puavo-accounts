@@ -1,9 +1,11 @@
 #!/bin/sh
 
 set -x
-set -eu
 
-#sudo apt-get update
+sudo apt-get update
+
+# FIXME: skip error when run apt-get update. This should be fix when mirror is reliable
+set -eu
 
 # Install build dependencies
 sudo make install-build-dep
