@@ -58,19 +58,21 @@
     </nav>
 
 
-    <div class="container">
+    <div class="page-content">
+      <div class="container">
 
-      <h2><%= t.layout.container_title %></h2>
+        <h1><%= t.layout.container_title %></h1>
 
-      <div class="row">
+        <div class="row">
 
-        <div class="col-md-8">
-          <%= yield %>
+          <div class="col-md-8">
+            <%= yield %>
+          </div>
+
+          <div class="col-md-4"></div>
         </div>
 
-        <div class="col-md-4"></div>
       </div>
-
     </div>
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->

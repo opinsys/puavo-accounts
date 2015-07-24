@@ -13,6 +13,10 @@ body {
     color: black !important;
 }
 
+.page-content {
+    margin-top: 50px;
+}
+
 .jumbotron {
     background-image: url('/accounts/img/intro.jpg');
     background-size: 375px 100px;
