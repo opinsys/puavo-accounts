@@ -205,6 +205,13 @@ module PuavoAccounts
       session.delete(:email)
 
       fluent_logger.warn "User created ok"
+
+      body = erb(:successfully_email_message, :layout => false, :locals => { :user => @user.data })
+
+      $mailer.send( :to =>  @user.data["email"],
+                    :subject => t.api.register_email.subject,
+                    :body => body )
+
       redirect "/accounts/successfully"
     end
 
