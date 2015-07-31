@@ -38,6 +38,7 @@ views:
     submit: Send
     title: Opinsys Account Registration
     description: Opinsys Lukiolaiskannettava requires an Opinsys Account which can be created through this service. To start please type in your email address here and press Send.
+    forgot_password: Did you forget your password?
   register_email_message:
     hello: Hi!
     header: "Register an account for Lukiolaiskannettava using this link:"
