@@ -33,6 +33,15 @@ body {
     font-size: 1.3em;
 }
 
+.bold {
+    font-weight: bold;
+}
+
+.register-information {
+    display: none;
+    margin-bottom: 50px;
+}
+
 @media (min-width: 375px) {
     .jumbotron {
         background-size: 720px 192px;

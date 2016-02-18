@@ -7,6 +7,18 @@
     <input class="btn primary" type="submit" value="<%= t.views.register_email.submit %>">
   </div>
 
-  <a href="https://lukiolaiskannettava.opinsys.fi/users/password/forgot"><%= t.views.register_email.forgot_password %></a>
+  <div>
+    <a href="https://lukiolaiskannettava.opinsys.fi/users/password/forgot"><%= t.views.register_email.forgot_password %></a>
+  </div>
+
+  <p></p>
+
+  <div>
+    <a href="#" id="link_register_information"><%= t.views.register_email.link_register_information %></a>
+  </div>
 
 </form>
+
+<div class="register-information">
+  <%= erb :register %>
+</div>

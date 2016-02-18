@@ -1,5 +1,9 @@
 (function($) {
 
+  $("#link_register_information").click(function() {
+      $(".register-information").toggle();
+  });
+
   var usernameInput = $("#user_username");
   var firstNameInput = $("#user_first_name");
   var lastNameInput = $("#user_last_name");
