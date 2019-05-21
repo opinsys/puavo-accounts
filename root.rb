@@ -131,7 +131,7 @@ module PuavoAccounts
       { 'name' => name, 'reason' => 'failed_validation' }
     end
 
-    post '/try_register_user' do
+    post '/register_user' do
       # Generate a unique ID for this request, to distinguish multiple requests
       # from each other. Some letters removed to prevent profanities, as the
       # code is displayed to users in case there are errors.
