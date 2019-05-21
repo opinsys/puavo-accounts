@@ -2,7 +2,7 @@ prefix ?= /usr/local
 sysconfdir = /etc
 installdir = $(prefix)/lib/puavo-accounts
 
-RUBY = /usr/bin/ruby2.0
+RUBY = /usr/bin/ruby
 BUNDLE = $(RUBY) /usr/bin/bundle
 
 build:
