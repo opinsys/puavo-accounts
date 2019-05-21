@@ -41,7 +41,3 @@ server:
 
 server-dev:
 	$(BUNDLE) exec shotgun --host 0.0.0.0 --port 9494 --server puma
-
-.PHONY: test
-test:
-	$(BUNDLE) exec $(RUBY) test/all.rb
