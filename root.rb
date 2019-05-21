@@ -4,10 +4,39 @@ require "socket"
 require "sinatra/base"
 require "sinatra/json"
 require "sinatra/r18n"
+require "http"
 
 require_relative "models/user"
 require_relative "lib/mailer"
 require_relative "lib/fluent"
+
+class PuavoRestWrapper
+  def initialize(host, domain)
+    @host = host
+    @domain = domain
+  end
+
+  def auth_request(username, password)
+    HTTP.basic_auth({
+      :user => username,
+      :pass => password
+    }).headers({
+      'host' => @domain,
+    })
+  end
+
+  def get(username, password, url, params={})
+    auth_request(username, password).get("#{@host}#{url}", :params => params)
+  end
+
+  def put(username, password, url, params)
+    auth_request(username, password).put("#{@host}#{url}", :params => params)
+  end
+
+  def post(username, password, url, params, json)
+    auth_request(username, password).post("#{@host}#{url}", :params => params, :json => json)
+  end
+end
 
 module PuavoAccounts
   HOSTNAME = Socket.gethostname
