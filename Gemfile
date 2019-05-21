@@ -9,6 +9,8 @@ gem "http"
 gem "webmock"
 gem "jwt"
 gem "fluent-logger", "~> 0.4.3"
+gem "byebug"
+gem "pry"
 
 group :test do
   gem "shotgun"
