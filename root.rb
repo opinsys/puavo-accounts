@@ -108,6 +108,330 @@ module PuavoAccounts
       }
     end
 
+
+    # --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+
+    def get_nested(from, *key)
+      now = from
+
+      key.each_with_index do |k, i|
+        is_last = (i == key.size - 1)
+        raise KeyError unless now.include?(k)
+        return now[k] if is_last
+        now = now[k]
+      end
+    end
+
+    def empty_field(name)
+      { 'name' => name, 'reason' => 'empty' }
+    end
+
+    def invalid_field(name)
+      { 'name' => name, 'reason' => 'failed_validation' }
+    end
+
+    post '/try_register_user' do
+      # Generate a unique ID for this request, to distinguish multiple requests
+      # from each other. Some letters removed to prevent profanities, as the
+      # code is displayed to users in case there are errors.
+      id = 'ABCDEGIJKLMOQRTUVXYZ1234678'.split('').sample(10).join
+
+      logger.info "(#{id}) received a new user registration request from #{request.env['REMOTE_ADDR']}"
+
+      body = request.body.read
+
+      begin
+        data = JSON.parse(body)
+      rescue StandardError => e
+        logger.error "(#{id}) client sent malformed JSON: |#{body}|"
+        return 400
+      end
+
+      begin
+        user_first_name = get_nested(data, 'user', 'first_name').strip()
+        user_last_name = get_nested(data, 'user', 'last_name').strip()
+        user_username = get_nested(data, 'user', 'username').strip()
+        user_email = get_nested(data, 'user', 'email').strip()
+        user_password = get_nested(data, 'user', 'password')
+        user_password_confirm = get_nested(data, 'user', 'password_confirm')
+        user_language = get_nested(data, 'user', 'language').strip()
+        user_phone = get_nested(data, 'user', 'phone').strip()
+        machine_dn = get_nested(data, 'machine', 'dn').strip()
+        machine_password = get_nested(data, 'machine', 'password').strip()
+        machine_hostname = get_nested(data, 'machine', 'hostname').strip()
+      rescue
+        logger.error "(#{id}) client sent incomplete user/machine data: |#{body}|"
+        return 400
+      end
+
+      # puavo-rest parameters
+      rest_host = CONFIG['puavo-rest']['server']
+      rest_domain = CONFIG['puavo-rest']['organisation_domain']
+      rest_user = CONFIG['puavo-rest']['username']
+      rest_password = CONFIG['puavo-rest']['password']
+      target_school_dn = CONFIG['school_dns_for_users'][0]
+
+      rest = PuavoRestWrapper.new(rest_host, rest_domain)
+
+      ret = {}
+      ret[:log_id] = id
+      ret[:status] = :ok
+      ret[:failed_fields] = []
+
+      # ------------------------------------------------------------------------
+      # Verify device registration
+
+      logger.info "(#{id}) verifying client device (hostname=\"#{machine_hostname}\", " \
+                  "dn=\"#{machine_dn}\", password=\"#{machine_password[0..9]}...\")"
+
+      begin
+        res = rest.get(machine_dn, machine_password, "/v3/devices/#{machine_hostname}")
+
+        if res.code == 200
+          # the dn/password combo works and the device exists
+          logger.info "(#{id}) found the device"
+        elsif res.code == 401
+          # the dn/password combo is not valid, so the machine is unlikely to exist
+          logger.info "(#{id}) received error 401, client dn/password are not OK, " \
+                      "assuming the device does not exist"
+          ret[:status] = :unknown_machine
+          return 401, ret.to_json
+        else
+          # something else failed
+          logger.error "(#{id}) received error code #{res.code} from puavo-rest, " \
+                       "unable to determine device status"
+          logger.error "(#{id}) full server response: |#{res}|"
+          ret[:status] = :server_error
+          return 500, ret.to_json
+        end
+      rescue StandardError => e
+        logger.error "(#{id}) caught an exception \"#{e}\" while determining " \
+                     "if the client machine exists"
+        ret[:status] = :server_error
+        return 500, ret.to_json
+      end
+
+      # ------------------------------------------------------------------------
+      # Is this device already registered for some user?
+
+      begin
+        device = rest.get(rest_user, rest_password, "/v3/devices/#{machine_hostname}")
+        device_data = JSON.parse(device)
+
+        unless device_data['primary_user_dn'].nil?
+          logger.error "(#{id}) this device already has a primary user " \
+                       "(\"#{device_data['primary_user_dn']}\")"
+          ret[:status] = :device_already_in_use
+          return 401, ret.to_json
+        else
+          logger.info "(#{id}) this device does not have a primary user"
+        end
+      rescue StandardError => e
+        logger.error "(#{id}) caught an exception \"#{e}\" while determining if "\
+                     "the machine has already been registered to some user"
+        ret[:status] = :server_error
+        return 500, ret.to_json
+      end
+
+      # ------------------------------------------------------------------------
+      # Validate user data
+
+      # Part 1: Reject empty fields (these should NOT happen)
+      if user_first_name.empty?
+        logger.error "(#{id}) user first name is empty"
+        ret[:failed_fields] << empty_field('first_name')
+        ret[:status] = :missing_data
+      end
+
+      if user_last_name.empty?
+        logger.error "(#{id}) user last name is empty"
+        ret[:failed_fields] << empty_field('last_name')
+        ret[:status] = :missing_data
+      end
+
+      if user_username.empty?
+        logger.error "(#{id}) user username is empty"
+        ret[:failed_fields] << empty_field('username')
+        ret[:status] = :missing_data
+      end
+
+      if user_email.empty?
+        logger.error "(#{id}) user email is empty"
+        ret[:failed_fields] << empty_field('email')
+        ret[:status] = :missing_data
+      end
+
+      if ret[:status] != :ok
+        return 400, ret.to_json
+      end
+
+      # Part 2: Check email, username and passwords
+
+      # The regex that works in Python does nothing in Ruby
+      user_username.split('').each do |c|
+        unless 'abcdefghijklmnopqrstuvwxyz0123456789.-_'.include?(c)
+          logger.error "(#{id}) the username (\"#{user_username}\") contains invalid characters"
+          ret[:status] = :invalid_username
+          return 400, ret.to_json
+        end
+      end
+
+      # TODO: Validate the address better?
+      if !user_email.include?('@') || user_email.count('.') == 0
+        logger.error "(#{id}) the email address (\"#{user_email}\") contains invalid characters"
+        ret[:status] = :invalid_email
+        return 400, ret.to_json
+      end
+
+      if user_password != user_password_confirm
+        logger.error "(#{id}) password mismatch"
+        ret[:status] = :password_mismatch
+        return 400, ret.to_json
+      end
+
+      unless CONFIG['locales'].include?(user_language)
+        logger.error "(#{id}) language \"#{user_language}\" is not valid"
+        ret[:status] = :invalid_language
+        return 400, ret.to_json
+      end
+
+      # ------------------------------------------------------------------------
+      # Is the username available?
+
+      logger.info "(#{id}) checking if the username (#{user_username}) is available"
+
+      begin
+        res = rest.get(rest_user, rest_password, "/v3/users/#{user_username}")
+
+        if res.code == 404
+          # not found, so the username is available
+          logger.info "(#{id}) the username is available"
+        elsif res.code == 200
+          # found, username is already used
+          logger.error "(#{id}) the username is NOT available"
+          ret[:status] = :username_unavailable
+          return 409, ret.to_json
+        else
+          # something else failed
+          logger.error "(#{id}) received error code #{res.code} from puavo-rest, " \
+                       "unable to determine if the username is available"
+          logger.error "(#{id}) full server response: |#{res}|"
+          ret[:status] = :server_error
+          return 500, ret.to_json
+        end
+      rescue StandardError => e
+        logger.error "(#{id}) caught an exception \"#{e}\" while checking if " \
+                     "the username is available"
+        ret[:status] = :server_error
+        return 500, ret.to_json
+      end
+
+      # ------------------------------------------------------------------------
+      # Create the user!
+
+      logger.info "(#{id}) trying to create a new account"
+
+      user_data = {
+        'first_name' => user_first_name,
+        'last_name' => user_last_name,
+        'username' => user_username,
+        'email' => user_email,
+        'password' => user_password,
+        'telephone_number' => user_phone,
+        'locale' => user_language,    # this has been validated already
+        'roles' => ['student'],
+        'school_dns' => target_school_dn,
+      }
+
+      begin
+        res = rest.post(rest_user, rest_password, '/v3/users', [], user_data)
+
+        if res.code == 200
+          # The account was created
+          logger.info "(#{id}) new user account \"#{user_username}\" created!"
+
+          # Try to set the newly-created account as the primary user
+          # for the device. If this fails, do nothing, because the
+          # first login will do it too.
+          begin
+            # Get the user DN
+            result = rest.get(rest_user, rest_password, "/v3/users/#{user_username}")
+            user_dn = JSON.parse(result)['dn']
+
+            logger.info "(#{id}) setting the primary user of the device \"#{machine_hostname} " \
+                        "to \"#{user_username}\" (\"#{user_dn}\")"
+
+            # Update device info
+            device_data = {
+              'primary_user_dn' => user_dn
+            }
+
+            result = rest.post(rest_user, rest_password,
+                               "/v3/devices/#{machine_hostname}",
+                               { :hostname => machine_hostname },
+                               device_data)
+
+            logger.info "(#{id}) successfully set \"#{user_username}\" as the " \
+                        "primary user of the device \"#{machine_hostname}\""
+          rescue StandardError => e
+            logger.error "(#{id}) could not set \"#{user_username}\" as the " \
+                         "primary user for the device \"#{machine_hostname}\""
+            logger.error "(#{id}) #{e}"
+          end
+        elsif res.code == 400
+          # The account was NOT created
+          logger.error "(#{id}) account creation failed, got a 400 error"
+          logger.error "(#{id}) full response: |#{res}|"
+
+          # Is it a duplicate email address?
+          res_json = JSON.parse(res)
+
+          if res_json.dig('error', 'code') == 'ValidationError'
+            invalid = res_json.dig('error', 'meta', 'invalid_attributes')
+
+            if invalid.include?('email')
+              email = invalid['email'][0]
+
+              case email['code']
+                when 'email_not_unique'
+                  # Yes, this email address is already in use
+                  logger.error "(#{id}) email address \"#{user_email}\" is already in use"
+                  ret[:status] = :duplicate_email
+                  return 409, ret.to_json
+                else
+                  # Don't know then
+                  ret[:status] = :server_error
+                  return 500, ret.to_json
+              end
+            end
+          end
+        else
+          # Something else failed
+          logger.error "(#{id}) account creation failed, got error #{res.code}"
+          logger.error "(#{id}) full response: |#{res}|"
+          ret[:status] = :server_error
+          return 500, ret.to_json
+        end
+      rescue StandardError => e
+        logger.error "(#{id}) caught an exception \"#{e}\" while creating a new account"
+        ret[:status] = :server_error
+        return 500, ret.to_json
+      end
+
+      # ------------------------------------------------------------------------
+      # All good?
+
+      # If we get here, the account was created and nothing failed.
+      # ret['status'] should still be :ok
+
+      return 200, ret.to_json
+    end
+
+    # --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+
+
     get "/accounts" do
       @user = User.new
 
