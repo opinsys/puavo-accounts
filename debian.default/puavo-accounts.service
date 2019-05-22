@@ -1,0 +1,24 @@
+# puavo-accounts service
+# Converted from the old puavo-accounts.upstart script
+
+[Unit]
+Description=puavo-accounts in production mode
+After=network-online.target
+
+[Service]
+Type=simple
+User=puavo
+Group=puavo
+WorkingDirectory=/var/app/puavo-accounts
+Environment="RACK_ENV=production"
+ExecStart=/bin/sh -c "bundle exec puma --workers 4 --port 9491"
+Restart=on-abnormal
+RestartSec=30s
+# /usr, /boot and /etc will be read-only
+ProtectSystem=full
+# /home, /root and /run/user will be inaccessible
+ProtectHome=true
+SyslogIdentifier=puavo-accounts
+
+[Install]
+WantedBy=multi-user.target
