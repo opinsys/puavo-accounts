@@ -127,7 +127,7 @@ module PuavoAccounts
     def rest_request
       HTTP.basic_auth(:user => CONFIG["puavo-rest"]["username"],
                       :pass => CONFIG["puavo-rest"]["password"])
-        .with_headers("Host" => CONFIG["puavo-rest"]["organisation_domain"])
+        .headers("Host" => CONFIG["puavo-rest"]["organisation_domain"])
     end
   end
 end
