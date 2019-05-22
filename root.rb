@@ -8,7 +8,6 @@ require "http"
 
 require_relative "models/user"
 require_relative "lib/mailer"
-require_relative "lib/fluent"
 
 class PuavoRestWrapper
   def initialize(host, domain)
@@ -39,17 +38,6 @@ class PuavoRestWrapper
 end
 
 module PuavoAccounts
-  HOSTNAME = Socket.gethostname
-  FQDN = Socket.gethostbyname(Socket.gethostname).first
-
-  FLUENT_LOGGER = FluentWrap.new(
-    "puavo-accounts",
-    :hostname => HOSTNAME,
-    :fqdn => FQDN
-  )
-
-  FLUENT_LOGGER.info "starting"
-
   $mailer = PuavoAccounts::Mailer.new
 
   class Root < Sinatra::Base
@@ -64,34 +52,11 @@ module PuavoAccounts
 
     register Sinatra::R18n
 
-    def fluent_logger
-      Thread.current[:fluent]
-    end
-
-    def fluent_logger=(logger)
-      Thread.current[:fluent] = logger
-    end
-
-
     before do
       request_headers = request.env.select{|k,v| k.start_with?("HTTP_")}
       if request_headers["HTTP_AUTHORIZATION"]
         request_headers["HTTP_AUTHORIZATION"] = "[FILTERED]"
       end
-
-      self.fluent_logger = FLUENT_LOGGER.merge({
-        "request" => {
-          "uuid" => (0...25).map{ ('a'..'z').to_a[rand(26)] }.join,
-          "ip" => env["HTTP_X_REAL_IP"] || request.ip,
-          "host" => request.host,
-          "url" => request.url,
-          "method" => env["REQUEST_METHOD"],
-          "headers" => request_headers
-        }
-      })
-
-      fluent_logger.info "request start"
-      logger.info request.path
     end
 
     after do
@@ -101,11 +66,11 @@ module PuavoAccounts
     def log_error
       err = env["sinatra.error"]
       return if err.nil?
-      fluent_logger.error "unhandled exception", {
-        "code" => err.class.name,
-        "message" => err.message,
-        "backtrace" => err.backtrace
-      }
+
+      logger.error "unhandled exception:"
+      logger.error "    code: #{err.class.name}"
+      logger.error "    message: #{err.message}"
+      logger.error "    backtrace: #{err.backtrace}"
     end
 
 
@@ -445,7 +410,7 @@ module PuavoAccounts
 
       if email.nil? or email.empty?
         @user.add_error("email", t.errors.invalid_email_address)
-        fluent_logger.warn "post without email"
+        logger.warn "post without email"
         return erb :register_email
       end
 
@@ -471,17 +436,13 @@ module PuavoAccounts
                       :subject => t.api.register_email.subject,
                       :body => body )
       rescue Net::SMTPSyntaxError, Net::SMTPFatalError, ArgumentError => error
-        fluent_logger.error "email sending failed", {
-          "email" => email,
-          "error" => error
-        }
+        logger.error "email sending failed:"
+        logger.error "    address: #{email}"
+        logger.error "    error: #{error}"
         @user.add_error("email", t.errors.invalid_email_address)
         return erb :register_email
       end
 
-      fluent_logger.info "registration email sent ok", {
-        "email" => email
-      }
       logger.info "Send email to following address: #{ email }, IP-address: #{ request.ip }"
       redirect to("/accounts/complete?email=#{ email }")
     end
@@ -494,15 +455,14 @@ module PuavoAccounts
       begin
         jwt_data = JWT.decode(params[:jwt], CONFIG["jwt"]["secret"])
       rescue JWT::DecodeError
-        fluent_logger.warn "invalid jwt data", "jwt_token" => params[:jwt]
+        logger.warn "invalid jwt data: #{params[:jwt]}"
         return erb :error, :locals => { :error => t.errors.invalid_jwt }
       end
 
       if (Time.now-60*60*24).to_i > jwt_data.first["iat"].to_i
-        fluent_logger.warn "jwt token expired", {
-          "jwt_token" => params[:jwt],
-          "jwt_data" => jwt_data
-        }
+        logger.warn "jwt token has expired:"
+        logger.warn "    token: #{params[:jwt]}"
+        logger.warn "    data: #{jwt_data}"
         return erb :error, :locals => { :error => t.errors.invalid_jwt }
       end
 
@@ -525,7 +485,7 @@ module PuavoAccounts
 
     post "/accounts/user" do
       unless session[:email]
-        fluent_logger.warn "Cannot create user", "reason" => "No email in session"
+        logger.warn "Cannot create user: no email in session"
         return erb :error, :locals => { :error => t.errors.invalid_jwt }
       end
 
@@ -534,20 +494,14 @@ module PuavoAccounts
       @user.data["email"] = session["email"]
 
       if params["user"]["password"] != params["user"]["password_confirmation"]
-        fluent_logger.warn "Cannot create user", {
-          "reason" => "bad password confirmation",
-          "params" => params
-        }
+        logger.warn "Cannot create user: bad password confirmation"
         @user.add_error("password_confirmation", t.errors.password_confirmation.does_not_match)
       end
 
       save_status = @user.save
 
       if not @user.email_error?
-        fluent_logger.warn "Cannot create user", {
-          "reason" => "email not unique",
-          "params" => params
-        }
+        logger.warn "Cannot create user: email not unique"
         return erb :error, :locals => { :error => t.views.new.email_unique_error(session[:email]) }
       end
 
@@ -557,7 +511,7 @@ module PuavoAccounts
 
       session.delete(:email)
 
-      fluent_logger.warn "User created ok"
+      logger.warn "User created ok"
 
       body = erb(:successfully_email_message, :layout => false, :locals => { :user => @user.data })
 
