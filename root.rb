@@ -38,6 +38,11 @@ class PuavoRestWrapper
 end
 
 module PuavoAccounts
+
+  # The maximum number of characters in first/last/username, password,
+  # email and phone fields
+  MAXIMUM_FIELD_LENGTH = 32
+
   $mailer = PuavoAccounts::Mailer.new
 
   class Root < Sinatra::Base
@@ -90,6 +95,10 @@ module PuavoAccounts
 
     def empty_field(name)
       { 'name' => name, 'reason' => 'empty' }
+    end
+
+    def too_long(name)
+      { 'name' => name, 'reason' => 'too_long' }
     end
 
     def invalid_field(name)
@@ -204,10 +213,18 @@ module PuavoAccounts
       # ------------------------------------------------------------------------
       # Validate user data
 
-      # Part 1: Reject empty fields (these should NOT happen)
+      # Part 1: Reject empty and too long fields (these should NOT happen as
+      # the client does these same validations and will not let the form to be
+      # submitted if the fields are not correct, but check anyway)
       if user_first_name.empty?
         logger.error "(#{id}) user first name is empty"
         ret[:failed_fields] << empty_field('first_name')
+        ret[:status] = :missing_data
+      end
+
+      if user_first_name.length > MAXIMUM_FIELD_LENGTH
+        logger.error "(#{id}) user first name is too long"
+        ret[:failed_fields] << too_long('first_name')
         ret[:status] = :missing_data
       end
 
@@ -217,15 +234,39 @@ module PuavoAccounts
         ret[:status] = :missing_data
       end
 
+      if user_last_name.length > MAXIMUM_FIELD_LENGTH
+        logger.error "(#{id}) user last name is too long"
+        ret[:failed_fields] << too_long('last_name')
+        ret[:status] = :missing_data
+      end
+
       if user_username.empty?
         logger.error "(#{id}) user username is empty"
         ret[:failed_fields] << empty_field('username')
         ret[:status] = :missing_data
       end
 
+      if user_username.length > MAXIMUM_FIELD_LENGTH
+        logger.error "(#{id}) username is too long"
+        ret[:failed_fields] << too_long('username')
+        ret[:status] = :missing_data
+      end
+
       if user_email.empty?
         logger.error "(#{id}) user email is empty"
         ret[:failed_fields] << empty_field('email')
+        ret[:status] = :missing_data
+      end
+
+      if user_email.length > 100    # permit very long addresses on purpose
+        logger.error "(#{id}) user email is too long"
+        ret[:failed_fields] << too_long('email')
+        ret[:status] = :missing_data
+      end
+
+      if user_phone.length > MAXIMUM_FIELD_LENGTH
+        logger.error "(#{id}) user phone number is too long"
+        ret[:failed_fields] << too_long('phone')
         ret[:status] = :missing_data
       end
 
