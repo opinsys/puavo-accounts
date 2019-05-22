@@ -106,11 +106,17 @@ module PuavoAccounts
 
       body = request.body.read
 
+      ret = {}
+      ret[:log_id] = id
+      ret[:status] = :ok
+      ret[:failed_fields] = []
+
       begin
         data = JSON.parse(body)
       rescue StandardError => e
         logger.error "(#{id}) client sent malformed JSON: |#{body}|"
-        return 400
+        ret[:status] = :malformed_json
+        return 400, ret.to_json
       end
 
       begin
@@ -127,7 +133,8 @@ module PuavoAccounts
         machine_hostname = get_nested(data, 'machine', 'hostname').strip()
       rescue
         logger.error "(#{id}) client sent incomplete user/machine data: |#{body}|"
-        return 400
+        ret[:status] = :incomplete_data
+        return 400, ret.to_json
       end
 
       # puavo-rest parameters
@@ -138,11 +145,6 @@ module PuavoAccounts
       target_school_dn = CONFIG['school_dns_for_users'][0]
 
       rest = PuavoRestWrapper.new(rest_host, rest_domain)
-
-      ret = {}
-      ret[:log_id] = id
-      ret[:status] = :ok
-      ret[:failed_fields] = []
 
       # ------------------------------------------------------------------------
       # Verify device registration
