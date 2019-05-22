@@ -1,6 +1,6 @@
-prefix ?= /usr/local
+prefix ?= /var/app
 sysconfdir = /etc
-installdir = $(prefix)/lib/puavo-accounts
+installdir = $(prefix)/puavo-accounts
 
 RUBY = /usr/bin/ruby
 BUNDLE = $(RUBY) /usr/bin/bundle
