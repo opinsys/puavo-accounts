@@ -37,7 +37,7 @@ deb:
 	dpkg-buildpackage -us -uc
 
 server:
-	$(BUNDLE) exec puma --port 9494
+	$(BUNDLE) exec puma --port 9491
 
 server-dev:
-	$(BUNDLE) exec shotgun --host 0.0.0.0 --port 9494 --server puma
+	$(BUNDLE) exec shotgun --host 0.0.0.0 --port 9491 --server puma
