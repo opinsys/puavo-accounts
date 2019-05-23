@@ -389,11 +389,20 @@ module PuavoAccounts
             logger.error "(#{id}) #{e}"
           end
 
-          # Send the confirmation email
+          # Send a confirmation email
           begin
-            $mailer.send( :to => user_email,
-                          :subject => 'Lukiolaiskannetavan rekisteröinti',
-                          :body => 'Lukiolaiskannettavatunnuksesi on luotu!' )
+            subject = t.api.register_email.subject
+
+            body = erb(:successfully_email_message,
+                       :layout => false,
+                       :locals => {
+                         :user => {
+                           'first_name' => user_first_name,
+                           'username' => user_username,
+                          }
+                       })
+
+            $mailer.send(:to => user_email, :subject => subject, :body => body)
 
             logger.info "(#{id}) sent a confirmation email to \"#{user_email}\""
             ret[:email_sent] = true
