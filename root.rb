@@ -8,6 +8,7 @@ require "http"
 
 require_relative "models/user"
 require_relative "lib/mailer"
+require_relative "lib/mattermost"
 
 class PuavoRestWrapper
   def initialize(host, domain)
@@ -106,6 +107,14 @@ module PuavoAccounts
     end
 
     post '/register_user' do
+      # Setup Mattermost logging
+      mattermost = Mattermost::Bot.new(
+        CONFIG['mattermost']['server'] || '',
+        CONFIG['mattermost']['webhook'] || '',
+        'user-registration')
+
+      mattermost.enable() if CONFIG['mattermost']['enabled']
+
       # Generate a unique ID for this request, to distinguish multiple requests
       # from each other. Some letters removed to prevent profanities, as the
       # code is displayed to users in case there are errors.
@@ -125,6 +134,8 @@ module PuavoAccounts
         data = JSON.parse(body)
       rescue StandardError => e
         logger.error "(#{id}) client sent malformed JSON: |#{body}|"
+        mattermost.send(logger, "(#{id}) client sent malformed JSON")
+
         ret[:status] = :malformed_json
         return 400, ret.to_json
       end
@@ -143,6 +154,8 @@ module PuavoAccounts
         machine_hostname = get_nested(data, 'machine', 'hostname').strip()
       rescue
         logger.error "(#{id}) client sent incomplete user/machine data: |#{body}|"
+        mattermost.send(logger, "(#{id}) client sent incomplete user/machine data")
+
         ret[:status] = :incomplete_data
         return 400, ret.to_json
       end
@@ -172,19 +185,28 @@ module PuavoAccounts
           # the dn/password combo is not valid, so the machine is unlikely to exist
           logger.info "(#{id}) received error 401, client dn/password are not OK, " \
                       "assuming the device does not exist"
+          mattermost.send(logger, "(#{id}) a registration was attempted from an " \
+                          "unknown/unregistered device \"#{machine_hostname}\"!")
+
           ret[:status] = :unknown_machine
           return 401, ret.to_json
         else
           # something else failed
-          logger.error "(#{id}) received error code #{res.code} from puavo-rest, " \
+          logger.error "(#{id}) received error #{res.code} from puavo-rest, " \
                        "unable to determine device status"
           logger.error "(#{id}) full server response: |#{res}|"
+          mattermost.send(logger, "(#{id}) received error #{res.code} from puavo-rest " \
+                          "while determining if the client device \"#{machine_hostname}\" exists!")
+
           ret[:status] = :server_error
           return 500, ret.to_json
         end
       rescue StandardError => e
-        logger.error "(#{id}) caught an exception \"#{e}\" while determining " \
-                     "if the client machine exists"
+        logger.error "(#{id}) caught an exception while determining " \
+                     "if the client device exists: #{e}"
+        mattermost.send(logger, "(#{id}) caught an exception while determining " \
+                        "if the client device \"#{machine_hostname}\" exists: #{e}")
+
         ret[:status] = :server_error
         return 500, ret.to_json
       end
@@ -199,14 +221,21 @@ module PuavoAccounts
         unless device_data['primary_user_dn'].nil?
           logger.error "(#{id}) this device already has a primary user " \
                        "(\"#{device_data['primary_user_dn']}\")"
+          mattermost.send(logger, "(#{id}) device \"#{machine_hostname}\" already " \
+                          "has a primary user!")
+
           ret[:status] = :device_already_in_use
           return 401, ret.to_json
         else
           logger.info "(#{id}) this device does not have a primary user"
         end
       rescue StandardError => e
-        logger.error "(#{id}) caught an exception \"#{e}\" while determining if "\
-                     "the machine has already been registered to some user"
+        logger.error "(#{id}) caught an exception while determining "\
+                     "if the device already has a primary user: #{e}"
+        mattermost.send(logger, "(#{id}) caught an exception while determining " \
+                        "if the device \"#{machine_hostname}\" already has a " \
+                        "primary user: #{e}")
+
         ret[:status] = :server_error
         return 500, ret.to_json
       end
@@ -326,12 +355,18 @@ module PuavoAccounts
           logger.error "(#{id}) received error code #{res.code} from puavo-rest, " \
                        "unable to determine if the username is available"
           logger.error "(#{id}) full server response: |#{res}|"
+          mattermost.send(logger, "(#{id}) received error #{res.code} from puavo-rest " \
+                          "while checking for username availability")
+
           ret[:status] = :server_error
           return 500, ret.to_json
         end
       rescue StandardError => e
-        logger.error "(#{id}) caught an exception \"#{e}\" while checking if " \
-                     "the username is available"
+        logger.error "(#{id}) caught an exception while checking if " \
+                     "the username is available: #{e}"
+        mattermost.send(logger, "(#{id}) caught an exception while checking " \
+                        "if the username \"#{user_username}\" is available: #{e}")
+
         ret[:status] = :server_error
         return 500, ret.to_json
       end
@@ -385,8 +420,10 @@ module PuavoAccounts
                         "primary user of the device \"#{machine_hostname}\""
           rescue StandardError => e
             logger.error "(#{id}) could not set \"#{user_username}\" as the " \
-                         "primary user for the device \"#{machine_hostname}\""
-            logger.error "(#{id}) #{e}"
+                         "primary user for the device \"#{machine_hostname}\": #{e}"
+            mattermost.send(logger, "(#{id}) new user successfully registered " \
+                            "on device \"#{machine_hostname}\", but the user could " \
+                            "not be set as the primary user: #{e}")
           end
 
           # Send a confirmation email
@@ -410,6 +447,10 @@ module PuavoAccounts
             logger.error "(#{id}) email sending failed:"
             logger.error "(#{id})    address: #{user_email}"
             logger.error "(#{id})    error: #{error}"
+
+            mattermost.send(logger, "(#{id}) new user \"#{user_username}\" successfully " \
+                            "registered, but the confirmation email could not be sent: #{error}")
+
             ret[:email_sent] = false
           end
 
@@ -431,10 +472,14 @@ module PuavoAccounts
                 when 'email_not_unique'
                   # Yes, this email address is already in use
                   logger.error "(#{id}) email address \"#{user_email}\" is already in use"
+
                   ret[:status] = :duplicate_email
                   return 409, ret.to_json
                 else
                   # Don't know then
+                  mattermost.send(logger, "(#{id}) got a 400 error from puavo-rest, " \
+                                  "new account NOT created! #{res}")
+
                   ret[:status] = :server_error
                   return 500, ret.to_json
               end
@@ -444,11 +489,16 @@ module PuavoAccounts
           # Something else failed
           logger.error "(#{id}) account creation failed, got error #{res.code}"
           logger.error "(#{id}) full response: |#{res}|"
+          mattermost.send(logger, "(#{id}) received error #{res.code} from puavo-rest, " \
+                          "new account NOT created! #{res}")
+
           ret[:status] = :server_error
           return 500, ret.to_json
         end
       rescue StandardError => e
         logger.error "(#{id}) caught an exception \"#{e}\" while creating a new account"
+        mattermost.send(logger, "(#{id}) caught an exception while creating the account: #{e}")
+
         ret[:status] = :server_error
         return 500, ret.to_json
       end

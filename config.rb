@@ -24,6 +24,11 @@ CONFIG = {
   },
   "jwt" => "secret",
   "session_secret" => "foobar",
+  "mattermost" => {
+    "server": "",
+    "webhook": "",
+    "enabled": false,
+  },
   "legacy_role_school_id" => 1,
   "legacy_role_id" => 2
 }
