@@ -8,6 +8,7 @@ module PuavoAccounts
       @options = { :via => :smtp }
       @options.merge!({
                         :from => CONFIG["smtp"]["from"],
+                        :charset => "UTF-8",
                         :via_options => {
                           :address => CONFIG["smtp"]["via_options"]["address"],
                           :port => CONFIG["smtp"]["via_options"]["port"],
