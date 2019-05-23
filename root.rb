@@ -118,6 +118,7 @@ module PuavoAccounts
       ret = {}
       ret[:log_id] = id
       ret[:status] = :ok
+      ret[:email_sent] = false
       ret[:failed_fields] = []
 
       begin
@@ -387,6 +388,22 @@ module PuavoAccounts
                          "primary user for the device \"#{machine_hostname}\""
             logger.error "(#{id}) #{e}"
           end
+
+          # Send the confirmation email
+          begin
+            $mailer.send( :to => user_email,
+                          :subject => 'Lukiolaiskannetavan rekisteröinti',
+                          :body => 'Lukiolaiskannettavatunnuksesi on luotu!' )
+
+            logger.info "(#{id}) sent a confirmation email to \"#{user_email}\""
+            ret[:email_sent] = true
+          rescue StandardError => error
+            logger.error "(#{id}) email sending failed:"
+            logger.error "(#{id})    address: #{user_email}"
+            logger.error "(#{id})    error: #{error}"
+            ret[:email_sent] = false
+          end
+
         elsif res.code == 400
           # The account was NOT created
           logger.error "(#{id}) account creation failed, got a 400 error"
