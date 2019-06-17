@@ -37,7 +37,7 @@ views:
   register_email:
     submit: Lähetä
     title: Käyttäjätunnuksen rekisteröinti
-    description: Opinsysin Lukiolaiskannettavan käyttämiseen tarvitaan Opinsys-järjestelmän käyttäjätunnus. Tämän palvelun kautta voit rekisteröidä oman käyttäjätunnuksesi. Käyttäjätunnuksen rekisteröimiseksi tarvitaan sähköpostiosoite. Kirjoita sähköpostiosoitteesi alla olevaan tekstikenttään ja valitse Lähetä-painike.
+    description: Lukiolaiskannettavan käyttämiseen tarvitaan lukiolaiskannettava.fi-käyttäjätunnus. Tämän palvelun kautta voit rekisteröidä oman käyttäjätunnuksesi. Käyttäjätunnuksen rekisteröimiseksi tarvitaan sähköpostiosoite. Kirjoita sähköpostiosoitteesi alla olevaan tekstikenttään ja valitse Lähetä-painike.
     forgot_password: Unohditko salasanasi?
     link_register_information: Rekisteriseloste
   register_email_message:
