@@ -53,7 +53,7 @@ views:
     description: Account creation successful!
 api:
   register_email:
-    subject: Opinsys Account Registration for Lukiolaiskannettava
+    subject: Käyttäjätunnuksen rekisteröinti Lukiolaiskannettavalle
 layout:
   header_title: Lukiolaiskannettava
   container_title: Opinsys Account registration
