@@ -120,7 +120,10 @@ module PuavoAccounts
       # code is displayed to users in case there are errors.
       id = 'ABCDEGIJKLMOQRTUVXYZ1234678'.split('').sample(10).join
 
-      logger.info "(#{id}) received a new user registration request from #{request.env['REMOTE_ADDR']}"
+      remote_addr = request.env['REMOTE_ADDR'] || '?'
+      x_real_ip = request.env['HTTP_X_REAL_IP'] || '?'
+      x_forwarded_for = request.env['HTTP_X_FORWARDED_FOR'] || '?'
+      logger.info "(#{id}) received a new user registration request from IP=#{remote_addr} (x_real_ip=#{x_real_ip}, x_forwarded_for=#{x_forwarded_for})"
 
       body = request.body.read
 
