@@ -33,10 +33,6 @@ module PuavoAccounts
 
       case rest_response.status
       when 200
-        unless self.set_legacy_role
-          raise "Couldn't set legacy role to user!"
-        end
-
         return true
       when 400
         res_errors = rest_response.parse["error"]
