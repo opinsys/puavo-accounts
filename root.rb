@@ -498,6 +498,12 @@ module PuavoAccounts
               end
             end
           end
+
+          # We don't know why the account could not be created. This is ugly,
+          # because we can only return a "generic" error to the user, who
+          # then has to contact us.
+          ret[:status] = :server_error
+          return 500, ret.to_json
         else
           # Something else failed
           logger.error "(#{id}) account creation failed, got error #{res.code}"
