@@ -462,7 +462,7 @@ module PuavoAccounts
           logger.error "(#{id}) account creation failed, got a 400 error"
           logger.error "(#{id}) full response: |#{res}|"
 
-          # Is it a duplicate email address?
+          # Try to dig up more information from the puavo-rest's response
           res_json = JSON.parse(res)
 
           if res_json.dig('error', 'code') == 'ValidationError'
@@ -473,18 +473,28 @@ module PuavoAccounts
 
               case email['code']
                 when 'email_not_unique'
-                  # Yes, this email address is already in use
+                  # A duplicate email address
                   logger.error "(#{id}) email address \"#{user_email}\" is already in use"
 
                   ret[:status] = :duplicate_email
                   return 409, ret.to_json
                 else
-                  # Don't know then
+                  # Something's wrong with the email address, but we don't know what
                   mattermost.send(logger, "(#{id}) got a 400 error from puavo-rest, " \
                                   "new account NOT created! #{res}")
 
                   ret[:status] = :server_error
                   return 500, ret.to_json
+              end
+
+            elsif invalid.include?('username')
+              case invalid['username'][0]['code']
+                when 'username_too_short'
+                  # The username is too short
+                  logger.error "(#{id}) username \"#{user_username}\" is too short"
+
+                  ret[:status] = :username_too_short
+                  return 409, ret.to_json
               end
             end
           end
