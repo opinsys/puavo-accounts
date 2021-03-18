@@ -391,11 +391,15 @@ module PuavoAccounts
         'username' => user_username,
         'email' => user_email,
         'password' => user_password,
-        'telephone_number' => user_phone,
         'locale' => user_language,    # this has been validated already
         'roles' => ['student'],
         'school_dns' => target_school_dn,
       }
+
+      # puavo-rest really does not like empty telephone numbers
+      if !user_phone.nil? && !user_phone.strip.empty?
+        user_data['telephone_number'] = user_phone
+      end
 
       begin
         res = rest.post(rest_user, rest_password, '/v3/users', [], user_data)
