@@ -440,6 +440,8 @@ module PuavoAccounts
           end
 
           # Send a confirmation email
+          send_retried = false
+
           begin
             subject = t.api.register_email.subject
 
@@ -460,6 +462,14 @@ module PuavoAccounts
             logger.error "(#{id}) email sending failed:"
             logger.error "(#{id})    address: #{user_email}"
             logger.error "(#{id})    error: #{error}"
+
+            # Try again if there was a network problem, but only once
+            if !send_retried && error.to_s.include?('Connection reset by peer')
+              logger.error "(#{id})    --> Retrying once"
+              send_retried = true
+              sleep(1)
+              retry
+            end
 
             mattermost.send(logger, "(#{id}) new user \"#{user_username}\" successfully " \
                             "registered, but the confirmation email could not be sent: #{error}")
