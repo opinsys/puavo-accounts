@@ -332,12 +332,12 @@ module PuavoAccounts
           ret[:status] = :invalid_username
           return 400, ret.to_json
         end
+      end
 
-        unless 'abcdefghijklmnopqrstuvwxyz0123456789'.include?(user_username[0])
-          logger.error "(#{id}) the username (\"#{user_username}\") does not start with a letter or number"
-          ret[:status] = :invalid_username
-          return 400, ret.to_json
-        end
+      unless 'abcdefghijklmnopqrstuvwxyz'.include?(user_username[0])
+        logger.error "(#{id}) the username (\"#{user_username}\") does not start with a letter"
+        ret[:status] = :invalid_username
+        return 400, ret.to_json
       end
 
       # TODO: Validate the address better?
