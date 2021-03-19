@@ -152,11 +152,12 @@ module PuavoAccounts
         user_password_confirm = get_nested(data, 'user', 'password_confirm')
         user_language = get_nested(data, 'user', 'language').strip()
         user_phone = get_nested(data, 'user', 'phone').strip()
+        machine_domain = get_nested(data, 'machine', 'organisation_domain').strip()
         machine_dn = get_nested(data, 'machine', 'dn').strip()
         machine_password = get_nested(data, 'machine', 'password').strip()
         machine_hostname = get_nested(data, 'machine', 'hostname').strip()
 
-        raise KeyError if machine_dn.empty? || machine_password.empty? || machine_hostname.empty?
+        raise KeyError if machine_domain.empty? || machine_dn.empty? || machine_password.empty? || machine_hostname.empty?
       rescue StandardError => e
         logger.error "(#{id}) client sent incomplete user/machine data: |#{body}|"
         mattermost.send(logger, "(#{id}) client sent incomplete user/machine data")
@@ -165,12 +166,22 @@ module PuavoAccounts
         return 400, ret.to_json
       end
 
-      # puavo-rest parameters
-      rest_host = CONFIG['puavo-rest']['server']
-      rest_domain = CONFIG['puavo-rest']['organisation_domain']
-      rest_user = CONFIG['puavo-rest']['username']
-      rest_password = CONFIG['puavo-rest']['password']
-      target_school_dn = CONFIG['school_dns_for_users'][0]
+      # Is the domain configured in the config file?
+      unless CONFIG['organisations'].include?(machine_domain)
+        logger.error "(#{id}) unknown or invalid organisation \"#{machine_domain}\""
+        mattermost.send(logger, "(#{id}) unknown or invalid organisation")
+
+        ret[:status] = :invalid_organisation_domain
+        return 400, ret.to_json
+      end
+
+      rest_host = CONFIG['puavo-rest']
+      rest_domain = machine_domain    # can use this directly, we've validated it
+
+      org = CONFIG['organisations'][machine_domain]
+      rest_user = org['username']
+      rest_password = org['password']
+      target_school_dn = nil
 
       rest = PuavoRestWrapper.new(rest_host, rest_domain)
 
@@ -186,6 +197,13 @@ module PuavoAccounts
         if res.code == 200
           # the dn/password combo works and the device exists
           logger.info "(#{id}) found the device"
+
+          # Put the user in the same school where the machine has been registered to
+          data = JSON.parse(res.body)
+          target_school_dn = data['school_dn']
+
+          logger.info "(#{id}) target school DN: \"#{target_school_dn}\""
+
         elsif res.code == 401
           # the dn/password combo is not valid, so the machine is unlikely to exist
           logger.info "(#{id}) received error 401, client dn/password are not OK, " \
@@ -211,6 +229,14 @@ module PuavoAccounts
                      "if the client device exists: #{e}"
         mattermost.send(logger, "(#{id}) caught an exception while determining " \
                         "if the client device \"#{machine_hostname}\" exists: #{e}")
+
+        ret[:status] = :server_error
+        return 500, ret.to_json
+      end
+
+      if target_school_dn.nil?
+        logger.error "(#{id}) target_school_dn is nil after the device information has been retrieved!"
+        mattermost.send(logger, "(#{id}) target_school_dn is nil!")
 
         ret[:status] = :server_error
         return 500, ret.to_json
