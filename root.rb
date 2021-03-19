@@ -155,7 +155,9 @@ module PuavoAccounts
         machine_dn = get_nested(data, 'machine', 'dn').strip()
         machine_password = get_nested(data, 'machine', 'password').strip()
         machine_hostname = get_nested(data, 'machine', 'hostname').strip()
-      rescue
+
+        raise KeyError if machine_dn.empty? || machine_password.empty? || machine_hostname.empty?
+      rescue StandardError => e
         logger.error "(#{id}) client sent incomplete user/machine data: |#{body}|"
         mattermost.send(logger, "(#{id}) client sent incomplete user/machine data")
 
@@ -249,58 +251,72 @@ module PuavoAccounts
       # Part 1: Reject empty and too long fields (these should NOT happen as
       # the client does these same validations and will not let the form to be
       # submitted if the fields are not correct, but check anyway)
-      if user_first_name.empty?
-        logger.error "(#{id}) user first name is empty"
+      if user_first_name.nil? || user_first_name.empty?
+        logger.error "(#{id}) the user first name is empty"
         ret[:failed_fields] << empty_field('first_name')
         ret[:status] = :missing_data
+      else
+        if user_first_name.length > MAXIMUM_FIELD_LENGTH
+          logger.error "(#{id}) the user first name is too long"
+          ret[:failed_fields] << too_long('first_name')
+          ret[:status] = :missing_data
+        end
       end
 
-      if user_first_name.length > MAXIMUM_FIELD_LENGTH
-        logger.error "(#{id}) user first name is too long"
-        ret[:failed_fields] << too_long('first_name')
-        ret[:status] = :missing_data
-      end
-
-      if user_last_name.empty?
-        logger.error "(#{id}) user last name is empty"
+      if user_last_name.nil? || user_last_name.empty?
+        logger.error "(#{id}) the user last name is empty"
         ret[:failed_fields] << empty_field('last_name')
         ret[:status] = :missing_data
+      else
+        if user_last_name.length > MAXIMUM_FIELD_LENGTH
+          logger.error "(#{id}) the user last name is too long"
+          ret[:failed_fields] << too_long('last_name')
+          ret[:status] = :missing_data
+        end
       end
 
-      if user_last_name.length > MAXIMUM_FIELD_LENGTH
-        logger.error "(#{id}) user last name is too long"
-        ret[:failed_fields] << too_long('last_name')
-        ret[:status] = :missing_data
-      end
-
-      if user_username.empty?
-        logger.error "(#{id}) user username is empty"
+      if user_username.nil? || user_username.empty?
+        logger.error "(#{id}) the username is empty"
         ret[:failed_fields] << empty_field('username')
         ret[:status] = :missing_data
-      end
+      else
+        if user_username.length < 3
+          logger.error "(#{id}) the username is too short"
+          ret[:failed_fields] << empty_field('username')    # argh (should never happen tho)
+          ret[:status] = :missing_data
+        end
 
-      if user_username.length > MAXIMUM_FIELD_LENGTH
-        logger.error "(#{id}) username is too long"
-        ret[:failed_fields] << too_long('username')
-        ret[:status] = :missing_data
+        if user_username.length > MAXIMUM_FIELD_LENGTH
+          logger.error "(#{id}) the username is too long"
+          ret[:failed_fields] << too_long('username')
+          ret[:status] = :missing_data
+        end
       end
 
       if user_email.empty?
         logger.error "(#{id}) user email is empty"
         ret[:failed_fields] << empty_field('email')
         ret[:status] = :missing_data
-      end
-
-      if user_email.length > 100    # permit very long addresses on purpose
+      elsif user_email.length > 100     # permit very long addresses on purpose
         logger.error "(#{id}) user email is too long"
         ret[:failed_fields] << too_long('email')
         ret[:status] = :missing_data
       end
 
-      if user_phone.length > MAXIMUM_FIELD_LENGTH
-        logger.error "(#{id}) user phone number is too long"
-        ret[:failed_fields] << too_long('phone')
-        ret[:status] = :missing_data
+      if !user_phone.nil?
+        if user_phone.strip.length > MAXIMUM_FIELD_LENGTH
+          logger.error "(#{id}) user phone number is too long"
+          ret[:failed_fields] << too_long('phone')
+          ret[:status] = :missing_data
+        else
+          user_phone.split('').each do |c|
+            unless '0123456789-+'.include?(c)
+              logger.error "(#{id}) the phone number (\"#{user_username}\") contains invalid characters"
+              ret[:failed_fields] << invalid_field('phone')
+              break
+            end
+          end
+        end
       end
 
       if ret[:status] != :ok
