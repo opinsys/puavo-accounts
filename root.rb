@@ -88,7 +88,7 @@ module PuavoAccounts
 
       key.each_with_index do |k, i|
         is_last = (i == key.size - 1)
-        raise KeyError unless now.include?(k)
+        raise KeyError, k unless now.include?(k)
         return now[k] if is_last
         now = now[k]
       end
@@ -152,18 +152,28 @@ module PuavoAccounts
         user_password_confirm = get_nested(data, 'user', 'password_confirm')
         user_language = get_nested(data, 'user', 'language').strip()
         user_phone = get_nested(data, 'user', 'phone').strip()
-        machine_domain = get_nested(data, 'machine', 'organisation_domain').strip()
         machine_dn = get_nested(data, 'machine', 'dn').strip()
         machine_password = get_nested(data, 'machine', 'password').strip()
         machine_hostname = get_nested(data, 'machine', 'hostname').strip()
 
-        raise KeyError if machine_domain.empty? || machine_dn.empty? || machine_password.empty? || machine_hostname.empty?
+        raise KeyError, "machine_dn" if machine_dn.empty?
+        raise KeyError, "machine_password" if machine_password.empty?
+        raise KeyError, "machine_hostname" if machine_hostname.empty?
       rescue StandardError => e
         logger.error "(#{id}) client sent incomplete user/machine data: |#{body}|"
         mattermost.send(logger, "(#{id}) client sent incomplete user/machine data")
 
         ret[:status] = :incomplete_data
         return 400, ret.to_json
+      end
+
+      # The domain is optional. If it was passed in the request, use it, but otherwise default
+      # to the hardcoded domain (because nothing else exists at this time).
+      begin
+        machine_domain = get_nested(data, 'machine', 'organisation_domain').strip()
+        raise KeyError, "machine_domain" if machine_domain.empty?
+      rescue
+        machine_domain = 'lukiolaiskannettava.opinsys.fi'
       end
 
       # Is the domain configured in the config file?
