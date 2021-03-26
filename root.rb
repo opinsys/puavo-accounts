@@ -174,7 +174,10 @@ module PuavoAccounts
         raise KeyError, "machine_domain" if machine_domain.empty?
       rescue
         machine_domain = 'lukiolaiskannettava.opinsys.fi'
+        logger.info "(#{id}) no domain in the received data, using default"
       end
+
+      logger.info "(#{id}) domain: #{machine_domain}"
 
       # Is the domain configured in the config file?
       unless CONFIG['organisations'].include?(machine_domain)
