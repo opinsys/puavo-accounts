@@ -629,8 +629,7 @@ module PuavoAccounts
 
       jwt_data = {
         # Issued At
-        "iat" => Time.now.to_i.to_s,
-
+        "iat" => Time.now.to_i,
         "email" => email
       }
 
