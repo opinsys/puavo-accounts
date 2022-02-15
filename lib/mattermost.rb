@@ -28,7 +28,7 @@ module Mattermost
         prefix = @message_prefix.nil? ? '' : "[#{@message_prefix.to_s}] "
         data['text'] = prefix + body.to_s
 
-        Net::HTTP.start(@uri.host, @uri.port, :use_ssl => true) do |http|
+        Net::HTTP.start(@uri.host, @uri.port, :use_ssl => false) do |http|
           post = Net::HTTP::Post.new(@uri, { 'Content-Type': 'text/json' })
           post.body = data.to_json
           http.request(post)
