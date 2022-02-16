@@ -37,6 +37,10 @@ install-build-dep:
 deb: install-build-dep
 	dpkg-buildpackage -us -uc
 
+.PHONY: test
+test:
+	$(BUNDLE) exec ruby test/all.rb
+
 .PHONY: server
 server:
 	$(BUNDLE) exec puma --port 9491
