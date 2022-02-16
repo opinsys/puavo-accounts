@@ -18,7 +18,7 @@ describe PuavoAccounts::User do
 
         assert_equal user.data, {}
         assert_equal user.errors, {}
-        assert_equal user.uuid, nil
+        assert_nil   user.uuid
       end
     end
 
