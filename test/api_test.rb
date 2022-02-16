@@ -165,7 +165,7 @@ describe PuavoAccounts::Root do
 
     it "will be create new user" do
       post "/accounts/user", @user_form
-      
+
       assert_requested(@stub_create_user)
       assert_requested(@stub_add_legacy_role)
 
