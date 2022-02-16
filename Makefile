@@ -28,12 +28,10 @@ install: clean-for-install
 
 
 install-build-dep:
-	mk-build-deps --install debian.default/control \
+	mk-build-deps --install debian/control \
 		--tool "apt-get --yes --force-yes" --remove
 
 deb:
-	rm -rf debian
-	cp -a debian.default debian
 	dpkg-buildpackage -us -uc
 
 server:
