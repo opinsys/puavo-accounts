@@ -38,6 +38,54 @@ class PuavoRestWrapper
   end
 end
 
+def get_nested(from, *key)
+  now = from
+
+  key.each_with_index do |k, i|
+    is_last = (i == key.size - 1)
+    raise KeyError, k unless now.include?(k)
+    return now[k] if is_last
+    now = now[k]
+  end
+end
+
+class Machine
+  attr_reader :dn, :domain, :hostname, :password
+
+  def initialize(machinedata)
+    # XXX our input validation could be stricter
+    @dn       = get_nested(machinedata, 'dn')
+    @domain   = get_nested(machinedata, 'organisation_domain')
+    @hostname = get_nested(machinedata, 'hostname')
+    @password = get_nested(machinedata, 'password')
+
+    # XXX machine.hostname should not be trusted to construct urls?
+
+    raise KeyError, "machine_dn"                  if @dn.empty?
+    raise KeyError, "machine_organisation_domain" if @domain.empty?
+    raise KeyError, "machine_hostname"            if @hostname.empty?
+    raise KeyError, "machine_password"            if @password.empty?
+  end
+end
+
+class User
+  attr_reader :email, :first_name, :language, :last_name,
+              :password, :password_confirm, :phone, :username
+
+  def initialize(userdata)
+    # XXX our input validation could be stricter
+    @email      = get_nested(userdata, 'email'     ).strip()
+    @first_name = get_nested(userdata, 'first_name').strip()
+    @language   = get_nested(userdata, 'language'  ).strip()
+    @last_name  = get_nested(userdata, 'last_name' ).strip()
+    @phone      = get_nested(userdata, 'phone'     ).strip()
+    @username   = get_nested(userdata, 'username'  ).strip()
+
+    @password_confirm = get_nested(userdata, 'password_confirm')
+    @password         = get_nested(userdata, 'password')
+  end
+end
+
 module PuavoAccounts
   # The maximum number of characters in first/last/username, password,
   # email and phone fields
@@ -78,17 +126,6 @@ module PuavoAccounts
     # --------------------------------------------------------------------------
     # --------------------------------------------------------------------------
 
-    def get_nested(from, *key)
-      now = from
-
-      key.each_with_index do |k, i|
-        is_last = (i == key.size - 1)
-        raise KeyError, k unless now.include?(k)
-        return now[k] if is_last
-        now = now[k]
-      end
-    end
-
     def empty_field(name)
       { 'name' => name, 'reason' => 'empty' }
     end
@@ -122,11 +159,12 @@ module PuavoAccounts
 
       body = request.body.read
 
-      ret = {}
-      ret[:log_id] = id
-      ret[:status] = :ok
-      ret[:email_sent] = false
-      ret[:failed_fields] = []
+      ret = {
+        :email_sent    => false,
+        :failed_fields => [],
+        :log_id        => id,
+        :status        => :ok,
+      }
 
       begin
         data = JSON.parse(body)
@@ -139,21 +177,9 @@ module PuavoAccounts
       end
 
       begin
-        user_first_name = get_nested(data, 'user', 'first_name').strip()
-        user_last_name = get_nested(data, 'user', 'last_name').strip()
-        user_username = get_nested(data, 'user', 'username').strip()
-        user_email = get_nested(data, 'user', 'email').strip()
-        user_password = get_nested(data, 'user', 'password')
-        user_password_confirm = get_nested(data, 'user', 'password_confirm')
-        user_language = get_nested(data, 'user', 'language').strip()
-        user_phone = get_nested(data, 'user', 'phone').strip()
-        machine_dn = get_nested(data, 'machine', 'dn').strip()
-        machine_password = get_nested(data, 'machine', 'password').strip()
-        machine_hostname = get_nested(data, 'machine', 'hostname').strip()
-
-        raise KeyError, "machine_dn" if machine_dn.empty?
-        raise KeyError, "machine_password" if machine_password.empty?
-        raise KeyError, "machine_hostname" if machine_hostname.empty?
+        # XXX our input validation could be stricter
+        user = User.new(data['user'])
+        machine = Machine.new(data['machine'])
       rescue StandardError => e
         logger.error "(#{id}) client sent incomplete user/machine data: |#{body}|"
         mattermost.send(logger, "(#{id}) client sent incomplete user/machine data")
@@ -162,21 +188,11 @@ module PuavoAccounts
         return 400, ret.to_json
       end
 
-      # The domain is optional. If it was passed in the request, use it, but otherwise default
-      # to the hardcoded domain (because nothing else exists at this time).
-      begin
-        machine_domain = get_nested(data, 'machine', 'organisation_domain').strip()
-        raise KeyError, "machine_domain" if machine_domain.empty?
-      rescue
-        machine_domain = 'lukiolaiskannettava.opinsys.fi'
-        logger.info "(#{id}) no domain in the received data, using default"
-      end
-
-      logger.info "(#{id}) domain: #{machine_domain}"
+      logger.info "(#{id}) domain: #{ machine.domain }"
 
       # Is the domain configured in the config file?
-      unless CONFIG['organisations'].include?(machine_domain)
-        logger.error "(#{id}) unknown or invalid organisation \"#{machine_domain}\""
+      unless CONFIG['organisations'].include?(machine.domain)
+        logger.error "(#{id}) unknown or invalid organisation \"#{machine.domain}\""
         mattermost.send(logger, "(#{id}) unknown or invalid organisation")
 
         ret[:status] = :invalid_organisation_domain
@@ -184,9 +200,9 @@ module PuavoAccounts
       end
 
       rest_host = CONFIG['puavo-rest']
-      rest_domain = machine_domain    # can use this directly, we've validated it
+      rest_domain = machine.domain    # can use this directly, we've validated it
 
-      org = CONFIG['organisations'][machine_domain]
+      org = CONFIG['organisations'][machine.domain]
       rest_user = org['username']
       rest_password = org['password']
       target_school_dn = nil
@@ -196,13 +212,13 @@ module PuavoAccounts
       # ------------------------------------------------------------------------
       # Verify device registration
 
-      logger.info "(#{id}) verifying client device (hostname=\"#{machine_hostname}\", " \
-                  "dn=\"#{machine_dn}\", password=\"#{machine_password[0..9]}...\")"
+      logger.info "(#{id}) verifying client device (hostname=\"#{machine.hostname}\", " \
+                  "dn=\"#{machine.dn}\", password=\"#{machine.password[0..9]}...\")"
 
       begin
-        res = rest.get(machine_dn, machine_password, "/v3/devices/#{machine_hostname}")
+        res = rest.get(machine.dn, machine.password, "/v3/devices/#{machine.hostname}")
 
-        if res.code == 200
+        if res.code == 200 then
           # the dn/password combo works and the device exists
           logger.info "(#{id}) found the device"
 
@@ -212,12 +228,12 @@ module PuavoAccounts
 
           logger.info "(#{id}) target school DN: \"#{target_school_dn}\""
 
-        elsif res.code == 401
+        elsif res.code == 401 then
           # the dn/password combo is not valid, so the machine is unlikely to exist
           logger.info "(#{id}) received error 401, client dn/password are not OK, " \
                       "assuming the device does not exist"
           mattermost.send(logger, "(#{id}) a registration was attempted from an " \
-                          "unknown/unregistered device \"#{machine_hostname}\"!")
+                          "unknown/unregistered device \"#{machine.hostname}\"!")
 
           ret[:status] = :unknown_machine
           return 401, ret.to_json
@@ -227,7 +243,7 @@ module PuavoAccounts
                        "unable to determine device status"
           logger.error "(#{id}) full server response: |#{res}|"
           mattermost.send(logger, "(#{id}) received error #{res.code} from puavo-rest " \
-                          "while determining if the client device \"#{machine_hostname}\" exists!")
+                          "while determining if the client device \"#{machine.hostname}\" exists!")
 
           ret[:status] = :server_error
           return 500, ret.to_json
@@ -236,13 +252,13 @@ module PuavoAccounts
         logger.error "(#{id}) caught an exception while determining " \
                      "if the client device exists: #{e}"
         mattermost.send(logger, "(#{id}) caught an exception while determining " \
-                        "if the client device \"#{machine_hostname}\" exists: #{e}")
+                        "if the client device \"#{machine.hostname}\" exists: #{e}")
 
         ret[:status] = :server_error
         return 500, ret.to_json
       end
 
-      if target_school_dn.nil?
+      if target_school_dn.nil? then
         logger.error "(#{id}) target_school_dn is nil after the device information has been retrieved!"
         mattermost.send(logger, "(#{id}) target_school_dn is nil!")
 
@@ -254,13 +270,13 @@ module PuavoAccounts
       # Is this device already registered for some user?
 
       begin
-        device = rest.get(rest_user, rest_password, "/v3/devices/#{machine_hostname}")
+        device = rest.get(rest_user, rest_password, "/v3/devices/#{machine.hostname}")
         device_data = JSON.parse(device)
 
-        unless device_data['primary_user_dn'].nil?
+        unless device_data['primary_user_dn'].nil? then
           logger.error "(#{id}) this device already has a primary user " \
                        "(\"#{device_data['primary_user_dn']}\")"
-          mattermost.send(logger, "(#{id}) device \"#{machine_hostname}\" already " \
+          mattermost.send(logger, "(#{id}) device \"#{machine.hostname}\" already " \
                           "has a primary user!")
 
           ret[:status] = :device_already_in_use
@@ -272,7 +288,7 @@ module PuavoAccounts
         logger.error "(#{id}) caught an exception while determining "\
                      "if the device already has a primary user: #{e}"
         mattermost.send(logger, "(#{id}) caught an exception while determining " \
-                        "if the device \"#{machine_hostname}\" already has a " \
+                        "if the device \"#{machine.hostname}\" already has a " \
                         "primary user: #{e}")
 
         ret[:status] = :server_error
@@ -285,71 +301,69 @@ module PuavoAccounts
       # Part 1: Reject empty and too long fields (these should NOT happen as
       # the client does these same validations and will not let the form to be
       # submitted if the fields are not correct, but check anyway)
-      if user_first_name.nil? || user_first_name.empty?
+      if user.first_name.nil? || user.first_name.empty? then
         logger.error "(#{id}) the user first name is empty"
         ret[:failed_fields] << empty_field('first_name')
         ret[:status] = :missing_data
       else
-        if user_first_name.length > MAX_FIRST_NAME_LENGTH
+        if user.first_name.length > MAX_FIRST_NAME_LENGTH then
           logger.error "(#{id}) the user first name is too long"
           ret[:failed_fields] << too_long('first_name')
           ret[:status] = :missing_data
         end
       end
 
-      if user_last_name.nil? || user_last_name.empty?
+      if user.last_name.nil? || user.last_name.empty? then
         logger.error "(#{id}) the user last name is empty"
         ret[:failed_fields] << empty_field('last_name')
         ret[:status] = :missing_data
       else
-        if user_last_name.length > MAX_LAST_NAME_LENGTH
+        if user.last_name.length > MAX_LAST_NAME_LENGTH
           logger.error "(#{id}) the user last name is too long"
           ret[:failed_fields] << too_long('last_name')
           ret[:status] = :missing_data
         end
       end
 
-      if user_username.nil? || user_username.empty?
+      if user.username.nil? || user.username.empty? then
         logger.error "(#{id}) the username is empty"
         ret[:failed_fields] << empty_field('username')
         ret[:status] = :missing_data
       else
-        if user_username.length < 3
+        if user.username.length < 3 then
           logger.error "(#{id}) the username is too short"
           ret[:failed_fields] << empty_field('username')    # argh (should never happen tho)
           ret[:status] = :missing_data
         end
 
-        if user_username.length > MAX_USERNAME_LENGTH
+        if user.username.length > MAX_USERNAME_LENGTH then
           logger.error "(#{id}) the username is too long"
           ret[:failed_fields] << too_long('username')
           ret[:status] = :missing_data
         end
       end
 
-      if user_email.empty?
+      if user.email.empty? then
         logger.error "(#{id}) user email is empty"
         ret[:failed_fields] << empty_field('email')
         ret[:status] = :missing_data
-      elsif user_email.length > MAX_EMAIL_LENGTH
+      elsif user.email.length > MAX_EMAIL_LENGTH then
         logger.error "(#{id}) user email is too long"
         ret[:failed_fields] << too_long('email')
         ret[:status] = :missing_data
       end
 
-      if !user_phone.nil?
-        if user_phone.strip.length > MAX_PHONE_LENGTH
-          logger.error "(#{id}) user phone number is too long"
-          ret[:failed_fields] << too_long('phone')
-          ret[:status] = :missing_data
-        else
-          # The LDAP schema is *very* picky about phone numbers
-          user_phone.split('').each do |c|
-            unless '0123456789-+'.include?(c)
-              logger.error "(#{id}) the phone number (\"#{user_username}\") contains invalid characters"
-              ret[:failed_fields] << invalid_field('phone')
-              break
-            end
+      if user.phone.length > MAX_PHONE_LENGTH then
+        logger.error "(#{id}) user phone number is too long"
+        ret[:failed_fields] << too_long('phone')
+        ret[:status] = :missing_data
+      else
+        # The LDAP schema is *very* picky about phone numbers
+        user.phone.split('').each do |c|
+          unless '0123456789-+'.include?(c)
+            logger.error "(#{id}) the phone number (\"#{user.username}\") contains invalid characters"
+            ret[:failed_fields] << invalid_field('phone')
+            break
           end
         end
       end
@@ -361,35 +375,35 @@ module PuavoAccounts
       # Part 2: Check email, username and passwords
 
       # The regex that works in Python does nothing in Ruby
-      user_username.split('').each do |c|
+      user.username.split('').each do |c|
         unless 'abcdefghijklmnopqrstuvwxyz0123456789.-_'.include?(c)
-          logger.error "(#{id}) the username (\"#{user_username}\") contains invalid characters"
+          logger.error "(#{id}) the username (\"#{user.username}\") contains invalid characters"
           ret[:status] = :invalid_username
           return 400, ret.to_json
         end
       end
 
-      unless 'abcdefghijklmnopqrstuvwxyz'.include?(user_username[0])
-        logger.error "(#{id}) the username (\"#{user_username}\") does not start with a letter"
+      unless 'abcdefghijklmnopqrstuvwxyz'.include?(user.username[0])
+        logger.error "(#{id}) the username (\"#{user.username}\") does not start with a letter"
         ret[:status] = :invalid_username
         return 400, ret.to_json
       end
 
       # TODO: Validate the address better?
-      if !user_email.include?('@') || user_email.count('.') == 0
-        logger.error "(#{id}) the email address (\"#{user_email}\") contains invalid characters"
+      if !user.email.include?('@') || user.email.count('.') == 0 then
+        logger.error "(#{id}) the email address (\"#{user.email}\") contains invalid characters"
         ret[:status] = :invalid_email
         return 400, ret.to_json
       end
 
-      if user_password != user_password_confirm
+      if user.password != user.password_confirm then
         logger.error "(#{id}) password mismatch"
         ret[:status] = :password_mismatch
         return 400, ret.to_json
       end
 
-      unless CONFIG['locales'].include?(user_language)
-        logger.error "(#{id}) language \"#{user_language}\" is not valid"
+      unless CONFIG['locales'].include?(user.language) then
+        logger.error "(#{id}) language \"#{user.language}\" is not valid"
         ret[:status] = :invalid_language
         return 400, ret.to_json
       end
@@ -397,10 +411,10 @@ module PuavoAccounts
       # ------------------------------------------------------------------------
       # Is the username available?
 
-      logger.info "(#{id}) checking if the username (#{user_username}) is available"
+      logger.info "(#{id}) checking if the username (#{user.username}) is available"
 
       begin
-        res = rest.get(rest_user, rest_password, "/v3/users/#{user_username}")
+        res = rest.get(rest_user, rest_password, "/v3/users/#{user.username}")
 
         if res.code == 404
           # not found, so the username is available
@@ -425,7 +439,7 @@ module PuavoAccounts
         logger.error "(#{id}) caught an exception while checking if " \
                      "the username is available: #{e}"
         mattermost.send(logger, "(#{id}) caught an exception while checking " \
-                        "if the username \"#{user_username}\" is available: #{e}")
+                        "if the username \"#{user.username}\" is available: #{e}")
 
         ret[:status] = :server_error
         return 500, ret.to_json
@@ -437,19 +451,20 @@ module PuavoAccounts
       logger.info "(#{id}) trying to create a new account"
 
       user_data = {
-        'first_name' => user_first_name,
-        'last_name' => user_last_name,
-        'username' => user_username,
-        'email' => user_email,
-        'password' => user_password,
-        'locale' => user_language,    # this has been validated already
+        'first_name' => user.first_name,
+        'last_name' => user.last_name,
+        'username' => user.username,
+        'email' => user.email,
+        'password' => user.password,
+        'locale' => user.language,    # this has been validated already
         'roles' => ['student'],
         'school_dns' => target_school_dn,
       }
 
-      # puavo-rest really does not like empty telephone numbers
-      if !user_phone.nil? && !user_phone.strip.empty?
-        user_data['telephone_number'] = user_phone
+      # puavo-rest does not like empty telephone numbers,
+      # set this only if non-empty
+      if !user.phone.empty? then
+        user_data['telephone_number'] = user.phone
       end
 
       begin
@@ -457,18 +472,18 @@ module PuavoAccounts
 
         if res.code == 200
           # The account was created
-          logger.info "(#{id}) new user account \"#{user_username}\" created!"
+          logger.info "(#{id}) new user account \"#{user.username}\" created!"
 
           # Try to set the newly-created account as the primary user
           # for the device. If this fails, do nothing, because the
           # first login will do it too.
           begin
             # Get the user DN
-            result = rest.get(rest_user, rest_password, "/v3/users/#{user_username}")
+            result = rest.get(rest_user, rest_password, "/v3/users/#{user.username}")
             user_dn = JSON.parse(result)['dn']
 
-            logger.info "(#{id}) setting the primary user of the device \"#{machine_hostname} " \
-                        "to \"#{user_username}\" (\"#{user_dn}\")"
+            logger.info "(#{id}) setting the primary user of the device \"#{machine.hostname} " \
+                        "to \"#{user.username}\" (\"#{user_dn}\")"
 
             # Update device info
             device_data = {
@@ -476,17 +491,17 @@ module PuavoAccounts
             }
 
             result = rest.post(rest_user, rest_password,
-                               "/v3/devices/#{machine_hostname}",
-                               { :hostname => machine_hostname },
+                               "/v3/devices/#{machine.hostname}",
+                               { :hostname => machine.hostname },
                                device_data)
 
-            logger.info "(#{id}) successfully set \"#{user_username}\" as the " \
-                        "primary user of the device \"#{machine_hostname}\""
+            logger.info "(#{id}) successfully set \"#{user.username}\" as the " \
+                        "primary user of the device \"#{machine.hostname}\""
           rescue StandardError => e
-            logger.error "(#{id}) could not set \"#{user_username}\" as the " \
-                         "primary user for the device \"#{machine_hostname}\": #{e}"
+            logger.error "(#{id}) could not set \"#{user.username}\" as the " \
+                         "primary user for the device \"#{machine.hostname}\": #{e}"
             mattermost.send(logger, "(#{id}) new user successfully registered " \
-                            "on device \"#{machine_hostname}\", but the user could " \
+                            "on device \"#{machine.hostname}\", but the user could " \
                             "not be set as the primary user: #{e}")
           end
 
@@ -500,18 +515,18 @@ module PuavoAccounts
                        :layout => false,
                        :locals => {
                          :user => {
-                           'first_name' => user_first_name,
-                           'username' => user_username,
+                           'first_name' => user.first_name,
+                           'username' => user.username,
                           }
                        })
 
-            $mailer.send(:to => user_email, :subject => subject, :body => body)
+            $mailer.send(:to => user.email, :subject => subject, :body => body)
 
-            logger.info "(#{id}) sent a confirmation email to \"#{user_email}\""
+            logger.info "(#{id}) sent a confirmation email to \"#{user.email}\""
             ret[:email_sent] = true
           rescue StandardError => error
             logger.error "(#{id}) email sending failed:"
-            logger.error "(#{id})    address: #{user_email}"
+            logger.error "(#{id})    address: #{user.email}"
             logger.error "(#{id})    error: #{error}"
 
             # Try again if there was a network problem, but only once
@@ -522,7 +537,7 @@ module PuavoAccounts
               retry
             end
 
-            mattermost.send(logger, "(#{id}) new user \"#{user_username}\" successfully " \
+            mattermost.send(logger, "(#{id}) new user \"#{user.username}\" successfully " \
                             "registered, but the confirmation email could not be sent: #{error}")
 
             ret[:email_sent] = false
@@ -545,7 +560,7 @@ module PuavoAccounts
               case email['code']
                 when 'email_not_unique'
                   # A duplicate email address
-                  logger.error "(#{id}) email address \"#{user_email}\" is already in use"
+                  logger.error "(#{id}) email address \"#{user.email}\" is already in use"
 
                   ret[:status] = :duplicate_email
                   return 409, ret.to_json
@@ -562,7 +577,7 @@ module PuavoAccounts
               case invalid['username'][0]['code']
                 when 'username_too_short'
                   # The username is too short
-                  logger.error "(#{id}) username \"#{user_username}\" is too short"
+                  logger.error "(#{id}) username \"#{user.username}\" is too short"
 
                   ret[:status] = :username_too_short
                   return 409, ret.to_json
