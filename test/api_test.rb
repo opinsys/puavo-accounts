@@ -39,7 +39,7 @@ describe PuavoAccounts::Root do
     before do
       jwt_data = {
         # Issued At
-        "iat" => Time.now.to_i.to_s,
+        "iat" => Time.now.to_i,
 
         "email" => "jane.doe@example.com"
       }
@@ -78,7 +78,7 @@ describe PuavoAccounts::Root do
 
     it "show error message if jwt is too old" do
       jwt_data = {
-        "iat" =>  (Time.now-60*60*25).to_i.to_s,
+        "iat" =>  (Time.now-60*60*25).to_i,
 
         "email" => "jane.doe@example.com"
       }
@@ -149,7 +149,7 @@ describe PuavoAccounts::Root do
 
       jwt_data = {
         # Issued At
-        "iat" => Time.now.to_i.to_s,
+        "iat" => Time.now.to_i,
 
         "email" => "jane.doe@example.com"
       }
