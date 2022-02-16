@@ -1,9 +1,8 @@
 require_relative "helpers"
 
 describe PuavoAccounts::Root do
-
   describe "email register form" do
-    it "will be respond 200" do
+    it "will respond with 200" do
       assert_equal 200, 200
 
       get "/accounts"
@@ -12,7 +11,7 @@ describe PuavoAccounts::Root do
     end
   end
 
-  describe "when register new user" do
+  describe "when registering a new user" do
     before do
       @user_form = {
         "user[first_name]" => "Jane",
@@ -72,7 +71,7 @@ describe PuavoAccounts::Root do
       get "/accounts/authenticate/#{ @jwt }"
     end
 
-    it "will be see user form" do
+    it "will see the user form" do
       get "/accounts/user"
 
       _(last_response.body).must_include "Opinsys Account registration"
