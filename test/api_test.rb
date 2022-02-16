@@ -73,7 +73,7 @@ describe PuavoAccounts::Root do
     it "show error message if jwt is invalid" do
       get "/accounts/authenticate/asdfsdfsdfsdfsdf0934023sdfs0df9w0"
 
-      last_response.body.must_include "The link has been expired or it is malformed!"
+      _(last_response.body).must_include "The link has been expired or it is malformed!"
     end
 
     it "show error message if jwt is too old" do
@@ -87,7 +87,7 @@ describe PuavoAccounts::Root do
 
       get "/accounts/authenticate/#{ @jwt }"
 
-      last_response.body.must_include "The link has been expired or it is malformed!"
+      _(last_response.body).must_include "The link has been expired or it is malformed!"
     end
 
     it "redirect to use form jwt is valid" do
@@ -160,7 +160,7 @@ describe PuavoAccounts::Root do
     it "will be see user form" do
       get "/accounts/user"
 
-      last_response.body.must_include "Opinsys Account registration"
+      _(last_response.body).must_include "Opinsys Account registration"
     end
 
     it "will be create new user" do
@@ -176,7 +176,7 @@ describe PuavoAccounts::Root do
       @user_form.delete("user[password_confirmation]")
       post "/accounts/user", @user_form
 
-      last_response.body.must_include "Passwords do not match!"
+      _(last_response.body).must_include "Passwords do not match!"
     end
 
   end
