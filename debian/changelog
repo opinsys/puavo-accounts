@@ -1,3 +1,9 @@
+puavo-accounts (0.1.7) bullseye; urgency=low
+
+  * Update for Bullseye.
+
+ -- Puavo Org <dev@opinsys.fi>  Wed, 16 Feb 2022 09:10:27 +0200
+
 puavo-accounts (0.1.6) stretch; urgency=low
 
   * Initial
