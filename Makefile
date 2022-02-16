@@ -7,34 +7,31 @@ BUNDLE = $(RUBY) /usr/bin/bundle
 
 .PHONY: build
 build:
-	$(BUNDLE) install --deployment
+	$(BUNDLE) config set --local deployment true
+	$(BUNDLE) install
 
 .PHONY: update-gemfile-lock
 update-gemfile-lock: clean
 	rm -f Gemfile.lock
 	GEM_HOME=.tmpgem $(BUNDLE) install
 	rm -rf .tmpgem
-	$(BUNDLE) install --deployment
+	$(BUNDLE) install
 
 .PHONY: clean
 clean:
 	rm -rf .bundle vendor
 
-.PHONY: clean-for-install
-clean-for-install:
-	$(BUNDLE) install --deployment --without test
-	$(BUNDLE) clean
-
 .PHONY: install
-install: clean-for-install
-	mkdir -p $(DESTDIR)$(installdir)
-	mkdir -p $(DESTDIR)$(sysconfdir)
-	cp -r *.*rb *.ru Gemfile* Makefile i18n lib models  public vendor views .bundle $(DESTDIR)$(installdir)
+install: build
+	mkdir -p $(DESTDIR)$(installdir) $(DESTDIR)$(sysconfdir)
+	cp -R *.*rb *.ru Gemfile* Makefile i18n lib models public vendor \
+		views .bundle $(DESTDIR)$(installdir)
 
 .PHONY: install-build-dep
 install-build-dep:
 	mk-build-deps --install debian/control \
-		--tool "apt-get --yes --force-yes" --remove
+		-s sudo --tool 'apt-get --yes' --remove
+	rm -f puavo-accounts-build-deps_*
 
 .PHONY: deb
 deb: install-build-dep

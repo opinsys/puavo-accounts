@@ -1,3 +1,6 @@
-.bundle/
-/vendor
-debian/
+.bundle
+debian/*debhelper*
+debian/files
+debian/puavo-accounts*
+puavo-accounts-build-deps_*
+vendor
