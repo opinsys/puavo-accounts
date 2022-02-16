@@ -3,97 +3,12 @@ require_relative "helpers"
 describe PuavoAccounts::Root do
 
   describe "email register form" do
-
     it "will be respond 200" do
       assert_equal 200, 200
 
       get "/accounts"
 
       assert_equal 200, last_response.status
-    end
-  end
-
-  describe "when register new email" do
-
-    before do
-      stub_mailer
-    end
-
-    it "will be send an email to user" do
-      post "/accounts", {
-        "user[email]" => "jane.doe@example.com"
-      }
-      assert_equal 302, last_response.status
-      assert_equal "jane.doe@example.com", $mailer.options[:to]
-
-      jwt = $mailer.options[:body].match("https://www.example.net/accounts/authenticate/(.+)$")[1]
-      jwt_data = JWT.decode(jwt, "secret")
-
-      assert_equal "jane.doe@example.com", jwt_data[0]["email"]
-    end
-
-  end
-
-  describe "authentication by jwt token" do
-
-    before do
-      jwt_data = {
-        # Issued At
-        "iat" => Time.now.to_i,
-
-        "email" => "jane.doe@example.com"
-      }
-
-      @jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
-
-      @rest_user = {
-        "email"=>"jane.doe@example.com",
-        "first_name"=>"Jane",
-        "last_name"=>"Doe",
-        "locale"=>"en_US",
-        "password"=>"secret",
-        "telephone_number"=>"1234567",
-        "username"=>"jane.doe"
-      }
-
-      stub_mailer
-
-      @user_form = {
-        "user[first_name]" => "Jane",
-        "user[last_name]" => "Doe",
-        "user[email]" => "jane.doe@example.com",
-        "user[username" => "jane.doe",
-        "user[telephone_number]" => "1234567",
-        "user[locale]" => "en_US",
-        "user[password]" => "secret",
-        "user[password_confirmation]" => "secret"
-      }
-    end
-
-    it "show error message if jwt is invalid" do
-      get "/accounts/authenticate/asdfsdfsdfsdfsdf0934023sdfs0df9w0"
-
-      _(last_response.body).must_include "The link has been expired or it is malformed!"
-    end
-
-    it "show error message if jwt is too old" do
-      jwt_data = {
-        "iat" =>  (Time.now-60*60*25).to_i,
-
-        "email" => "jane.doe@example.com"
-      }
-
-      @jwt = JWT.encode(jwt_data, CONFIG["jwt"]["secret"])
-
-      get "/accounts/authenticate/#{ @jwt }"
-
-      _(last_response.body).must_include "The link has been expired or it is malformed!"
-    end
-
-    it "redirect to use form jwt is valid" do
-      get "/accounts/authenticate/#{ @jwt }"
-
-      assert last_response.redirect?
     end
   end
 
@@ -161,35 +76,6 @@ describe PuavoAccounts::Root do
       get "/accounts/user"
 
       _(last_response.body).must_include "Opinsys Account registration"
-    end
-
-    it "will be create new user" do
-      post "/accounts/user", @user_form
-
-      assert_requested(@stub_create_user)
-      assert_requested(@stub_add_legacy_role)
-
-      assert last_response.redirect?
-    end
-
-    it "render error if password doesn't match confirmation" do
-      @user_form.delete("user[password_confirmation]")
-      post "/accounts/user", @user_form
-
-      _(last_response.body).must_include "Passwords do not match!"
-    end
-
-  end
-
-  def stub_mailer
-    $mailer = Class.new do
-      def self.options
-        return @options
-      end
-
-      def self.send(args)
-        @options = args
-      end
     end
   end
 end
