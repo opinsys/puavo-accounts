@@ -12,5 +12,6 @@ gem "byebug"
 gem "pry"
 
 group :test do
+  gem "rack-test"
   gem "shotgun"
 end
