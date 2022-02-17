@@ -100,13 +100,13 @@ class Machine
     if res.code == 401 then
       # the dn/password combo is not valid, so the machine is unlikely to exist
       louderrormsg("(#{id}) a registration was attempted from an " \
-                   "unknown/unregistered device \"#{machine.hostname}\"!")
+                   "unknown/unregistered device \"#{@hostname}\"!")
       raise MachineNotFound
     end
 
     if res.code != 200 then
       louderrormsg("(#{id}) received error #{res.code} from puavo-rest " \
-                   "while determining if the client device \"#{machine.hostname}\" exists!")
+                   "while determining if the client device \"#{@hostname}\" exists!")
       louderrormsg("(#{id}) full server response: |#{res}|")
       raise RestServerError
     end
@@ -530,7 +530,7 @@ module PuavoAccounts
       logger.info "(#{id}) domain: #{ machine.domain }"
 
       # Is the domain configured in the config file?
-      unless CONFIG['organisations'].include?(machine.domain)
+      unless CONFIG['organisations'].include?(machine.domain) then
         louderrormsg("(#{id}) unknown or invalid organisation \"#{machine.domain}\"")
         ret[:status] = :invalid_organisation_domain
         return 400, ret.to_json
