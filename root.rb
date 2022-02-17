@@ -40,6 +40,15 @@ class PuavoRestWrapper
   end
 end
 
+def louderrormsg(message)
+  logger.error(message)
+  begin
+    $mattermost.send(logger, message)
+  rescue StandardError => e
+    logger.error('error in sending a message to Mattermost')
+  end
+end
+
 def get_nested(from, *key)
   # XXX this should ensure that we do not get nil as value...
   # XXX if that is possible, those could be replaced by empty strings?
@@ -90,19 +99,15 @@ class Machine
 
     if res.code == 401 then
       # the dn/password combo is not valid, so the machine is unlikely to exist
-      logger.info "(#{id}) received error 401, client dn/password are not OK, " \
-                  "assuming the device does not exist"
-      mattermost.send(logger, "(#{id}) a registration was attempted from an " \
-                      "unknown/unregistered device \"#{machine.hostname}\"!")
+      louderrormsg("(#{id}) a registration was attempted from an " \
+                   "unknown/unregistered device \"#{machine.hostname}\"!")
       raise MachineNotFound
     end
 
     if res.code != 200 then
-      logger.error "(#{id}) received error #{res.code} from puavo-rest, " \
-                   "unable to determine device status"
-      logger.error "(#{id}) full server response: |#{res}|"
-      mattermost.send(logger, "(#{id}) received error #{res.code} from puavo-rest " \
-                      "while determining if the client device \"#{machine.hostname}\" exists!")
+      louderrormsg("(#{id}) received error #{res.code} from puavo-rest " \
+                   "while determining if the client device \"#{machine.hostname}\" exists!")
+      louderrormsg("(#{id}) full server response: |#{res}|")
       raise RestServerError
     end
 
@@ -112,10 +117,8 @@ class Machine
     device_data = JSON.parse(res.body)
 
     unless device_data['primary_user_dn'].nil? then
-      logger.error "(#{id}) this device already has a primary user " \
-                   "(\"#{device_data['primary_user_dn']}\")"
-      mattermost.send(logger, "(#{id}) device \"#{machine.hostname}\" already " \
-                      "has a primary user!")
+      louderrormsg("(#{id}) this device already has a primary user " \
+                   "(\"#{device_data['primary_user_dn']}\")")
       raise MachineAlreadyInUse
     end
 
@@ -125,8 +128,7 @@ class Machine
     # where the machine has been registered to.
     @target_school_dn = device_data['school_dn']
     if @target_school_dn.nil? then
-      logger.error "(#{id}) target_school_dn is nil after the device information has been retrieved!"
-      mattermost.send(logger, "(#{id}) target_school_dn is nil!")
+      louderrormsg("(#{id}) target_school_dn is nil after the device information has been retrieved!")
       raise RestServerError
     end
 
@@ -164,6 +166,14 @@ class Machine
 end
 
 class User
+  # The maximum number of characters in first/last/username, password,
+  # email and phone fields
+  MAX_EMAIL_LENGTH      = 100
+  MAX_FIRST_NAME_LENGTH = 32
+  MAX_LAST_NAME_LENGTH  = 32
+  MAX_PHONE_LENGTH      = 32
+  MAX_USERNAME_LENGTH   = 65
+
   attr_reader :email, :first_name, :language, :last_name,
               :password, :password_confirm, :phone, :username
 
@@ -299,11 +309,9 @@ class User
 
     if res.code != 404 then
       # something failed
-      logger.error "(#{id}) received error code #{res.code} from puavo-rest, " \
-                   "unable to determine if the username is available"
-      logger.error "(#{id}) full server response: |#{res}|"
-      mattermost.send(logger, "(#{id}) received error #{res.code} from puavo-rest " \
-                      "while checking for username availability")
+      louderrormsg("(#{id}) received error #{res.code} from puavo-rest " \
+                   "while checking for username availability")
+      louderrormsg("(#{id}) full server response: |#{res}|")
       ret[:status] = :server_error
       return ret
     end
@@ -359,9 +367,8 @@ class User
               return ret
             else
               # Something's wrong with the email address, but we don't know what
-              mattermost.send(logger, "(#{id}) got a 400 error from puavo-rest, " \
-                              "new account NOT created! #{res}")
-
+              louderrormsg("(#{id}) got a 400 error from puavo-rest, " \
+                           "new account NOT created! #{res}")
               ret[:status] = :server_error
               return ret
           end
@@ -388,11 +395,8 @@ class User
 
     if res.code != 200 then
       # Something else failed
-      logger.error "(#{id}) account creation failed, got error #{res.code}"
-      logger.error "(#{id}) full response: |#{res}|"
-      mattermost.send(logger, "(#{id}) received error #{res.code} from puavo-rest, " \
-                      "new account NOT created! #{res}")
-
+      louderrormsg("(#{id}) received error #{res.code} from puavo-rest, " \
+                   "new account NOT created! #{res}")
       ret[:status] = :server_error
       return ret
     end
@@ -402,13 +406,12 @@ class User
 end
 
 module PuavoAccounts
-  # The maximum number of characters in first/last/username, password,
-  # email and phone fields
-  MAX_FIRST_NAME_LENGTH = 32
-  MAX_LAST_NAME_LENGTH = 32
-  MAX_USERNAME_LENGTH = 65
-  MAX_EMAIL_LENGTH = 100
-  MAX_PHONE_LENGTH = 32
+  # Setup Mattermost logging
+  $mattermost = Mattermost::Bot.new(
+    CONFIG['mattermost']['server']  || '',
+    CONFIG['mattermost']['webhook'] || '',
+    'user-registration')
+  $mattermost.enable() if CONFIG['mattermost']['enabled']
 
   $mailer = PuavoAccounts::Mailer.new
 
@@ -473,8 +476,8 @@ module PuavoAccounts
           retry
         end
 
-        mattermost.send(logger, "(#{id}) new user \"#{user.username}\" successfully " \
-                        "registered, but the confirmation email could not be sent: #{error}")
+        louderrormsg("(#{id}) new user \"#{user.username}\" successfully " \
+                     "registered, but the confirmation email could not be sent: #{error}")
 
         ret[:email_sent] = false
       end
@@ -486,14 +489,6 @@ module PuavoAccounts
     # --------------------------------------------------------------------------
 
     post '/register_user' do
-      # Setup Mattermost logging
-      mattermost = Mattermost::Bot.new(
-        CONFIG['mattermost']['server'] || '',
-        CONFIG['mattermost']['webhook'] || '',
-        'user-registration')
-
-      mattermost.enable() if CONFIG['mattermost']['enabled']
-
       # Generate a unique ID for this request, to distinguish multiple requests
       # from each other. Some letters removed to prevent profanities, as the
       # code is displayed to users in case there are errors.
@@ -516,8 +511,7 @@ module PuavoAccounts
       begin
         data = JSON.parse(body)
       rescue StandardError => e
-        logger.error "(#{id}) client sent malformed JSON: |#{body}|"
-        mattermost.send(logger, "(#{id}) client sent malformed JSON")
+        loudaerrormsg("(#{id}) client sent malformed JSON: |#{body}|")
 
         ret[:status] = :malformed_json
         return 400, ret.to_json
@@ -528,9 +522,7 @@ module PuavoAccounts
         user = User.new(data['user'])
         machine = Machine.new(data['machine'])
       rescue StandardError => e
-        logger.error "(#{id}) client sent incomplete user/machine data: |#{body}|"
-        mattermost.send(logger, "(#{id}) client sent incomplete user/machine data")
-
+        louderrormsg("(#{id}) client sent incomplete user/machine data: |#{body}|")
         ret[:status] = :incomplete_data
         return 400, ret.to_json
       end
@@ -539,9 +531,7 @@ module PuavoAccounts
 
       # Is the domain configured in the config file?
       unless CONFIG['organisations'].include?(machine.domain)
-        logger.error "(#{id}) unknown or invalid organisation \"#{machine.domain}\""
-        mattermost.send(logger, "(#{id}) unknown or invalid organisation")
-
+        louderrormsg("(#{id}) unknown or invalid organisation \"#{machine.domain}\"")
         ret[:status] = :invalid_organisation_domain
         return 400, ret.to_json
       end
@@ -575,10 +565,8 @@ module PuavoAccounts
         ret[:status] = :server_error
         return 500, ret.to_json
       rescue StandardError => e
-        logger.error "(#{id}) caught an exception while determining " \
-                     "if the client device exists: #{e}"
-        mattermost.send(logger, "(#{id}) caught an exception while determining " \
-                        "if the client device \"#{machine.hostname}\" exists: #{e}")
+        louderrormsg("(#{id}) caught an exception while determining " \
+                     "if the client device \"#{machine.hostname}\" exists: #{e}")
         ret[:status] = :server_error
         return 500, ret.to_json
       end
@@ -608,11 +596,8 @@ module PuavoAccounts
             return 500, ret.to_json
         end
       rescue StandardError => e
-        logger.error "(#{id}) caught an exception while checking if " \
-                     "the username is available: #{e}"
-        mattermost.send(logger, "(#{id}) caught an exception while checking " \
-                        "if the username \"#{user.username}\" is available: #{e}")
-
+        louderrormsg("(#{id}) caught an exception while checking " \
+                     "if the username \"#{user.username}\" is available: #{e}")
         ret[:status] = :server_error
         return 500, ret.to_json
       end
@@ -634,9 +619,7 @@ module PuavoAccounts
             return 500, ret.to_json
         end
       rescue StandardError => e
-        logger.error "(#{id}) caught an exception \"#{e}\" while creating a new account"
-        mattermost.send(logger, "(#{id}) caught an exception while creating the account: #{e}")
-
+        louderrormsg("(#{id}) caught an exception while creating the account: #{e}")
         ret[:status] = :server_error
         return 500, ret.to_json
       end
@@ -650,11 +633,8 @@ module PuavoAccounts
         # first login will do it too.
         user.set_primary_user(puavo_rest, machine)
       rescue StandardError => e
-        logger.error "(#{id}) could not set \"#{user.username}\" as the " \
-                     "primary user for the device \"#{machine.hostname}\": #{e}"
-        mattermost.send(logger, "(#{id}) new user successfully registered " \
-                        "on device \"#{machine.hostname}\", but the user could " \
-                        "not be set as the primary user: #{e}")
+        louderrormsg("(#{id}) could not set \"#{user.username}\" as the " \
+                     "primary user for the device \"#{machine.hostname}\": #{e}")
       end
 
       ret = send_confirmation_email(user, ret)
