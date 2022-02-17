@@ -511,7 +511,7 @@ module PuavoAccounts
       begin
         data = JSON.parse(body)
       rescue StandardError => e
-        loudaerrormsg("(#{id}) client sent malformed JSON: |#{body}|")
+        loudaerrormsg("(#{id}) client sent malformed JSON")
 
         ret[:status] = :malformed_json
         return 400, ret.to_json
@@ -522,7 +522,7 @@ module PuavoAccounts
         user = User.new(data['user'])
         machine = Machine.new(data['machine'])
       rescue StandardError => e
-        louderrormsg("(#{id}) client sent incomplete user/machine data: |#{body}|")
+        louderrormsg("(#{id}) client sent incomplete user/machine data")
         ret[:status] = :incomplete_data
         return 400, ret.to_json
       end
