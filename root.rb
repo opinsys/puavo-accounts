@@ -11,9 +11,12 @@ require_relative "lib/mailer"
 require_relative "lib/mattermost"
 
 class PuavoRestWrapper
-  def initialize(host, domain)
-    @host = host
-    @domain = domain
+  def initialize(host, domain, username, password)
+    # XXX check that these are all set?
+    @domain   = domain
+    @host     = host
+    @password = password
+    @username = username
   end
 
   def auth_request(username, password)
@@ -25,16 +28,15 @@ class PuavoRestWrapper
     })
   end
 
-  def get(username, password, url, params={})
+  def get(url, params={}, username=nil, password=nil)
+    username ||= @username
+    password ||= @password
     auth_request(username, password).get("#{@host}#{url}", :params => params)
   end
 
-  def put(username, password, url, params)
-    auth_request(username, password).put("#{@host}#{url}", :params => params)
-  end
-
-  def post(username, password, url, params, json)
-    auth_request(username, password).post("#{@host}#{url}", :params => params, :json => json)
+  def post(url, params, json)
+    auth_request(@username, @password).post("#{@host}#{url}", :params => params,
+                                                              :json   => json)
   end
 end
 
@@ -59,6 +61,7 @@ def too_long(name)     ; { 'name' => name, 'reason' => 'too_long'          }; en
 class MachineAlreadyInUse < StandardError; end
 class MachineNotFound     < StandardError; end
 class RestServerError     < StandardError; end
+class SetPrimaryUserError < StandardError; end
 
 class Machine
   attr_reader :dn, :domain, :hostname, :password
@@ -81,7 +84,9 @@ class Machine
   end
 
   def lookup_host(puavo_rest, id)
-    res = puavo_rest.get(@dn, @password, "/v3/devices/#{@hostname}")
+    # XXX should the hostname be validated first so that this url might not
+    # XXX contain crazy stuff?
+    res = puavo_rest.get("/v3/devices/#{@hostname}", {}, @dn, @password)
 
     if res.code == 401 then
       # the dn/password combo is not valid, so the machine is unlikely to exist
@@ -127,6 +132,35 @@ class Machine
 
     logger.info "(#{id}) target school DN: \"#{@target_school_dn}\""
   end
+
+  def set_primary_user(puavo_rest, username)
+    # Get the user DN
+    res = puavo_rest.get("/v3/users/#{username}")
+    if res.code != 200 then
+      # XXX we could show the errors provided by puavo rest
+      raise SetPrimaryUserError
+    end
+
+    user_dn = JSON.parse(res)['dn']
+
+    logger.info "(#{id}) setting the primary user of the device \"#{@hostname} " \
+                "to \"#{username}\" (\"#{user_dn}\")"
+
+    # Update device info
+    device_data = { 'primary_user_dn' => user_dn }
+
+    res = puavo_rest.post("/v3/devices/#{@hostname}",
+                         { :hostname => @hostname },
+                         device_data)
+
+    if res.code != 200 then
+      # XXX we could show the errors provided by puavo rest
+      raise SetPrimaryUserError
+    end
+
+    logger.info "(#{id}) successfully set \"#{username}\" as the " \
+                "primary user of the device \"#{@hostname}\""
+  end
 end
 
 class User
@@ -162,7 +196,7 @@ class User
       ret[:status] = :missing_data
     end
 
-    if @last_name.nil? || @last_name.empty? then
+    if @last_name.empty? then
       logger.error "(#{id}) the user last name is empty"
       ret[:failed_fields] << empty_field('last_name')
       ret[:status] = :missing_data
@@ -172,13 +206,14 @@ class User
       ret[:status] = :missing_data
     end
 
-    if @username.nil? || @username.empty? then
+    if @username.empty? then
       logger.error "(#{id}) the username is empty"
       ret[:failed_fields] << empty_field('username')
       ret[:status] = :missing_data
     elsif @username.length < 3 then
       logger.error "(#{id}) the username is too short"
-      ret[:failed_fields] << empty_field('username')    # argh (should never happen tho)
+      # argh (should never happen tho)
+      ret[:failed_fields] << empty_field('username')
       ret[:status] = :missing_data
     elsif @username.length > MAX_USERNAME_LENGTH then
       logger.error "(#{id}) the username is too long"
@@ -252,6 +287,118 @@ class User
 
     return ret
   end
+
+  def user_is_available(puavo_rest, ret)
+    res = puavo_rest.get("/v3/users/#{@username}")
+    if res.code == 200 then
+      # found, username is already used
+      logger.error "(#{id}) the username is NOT available"
+      ret[:status] = :username_unavailable
+      return ret
+    end
+
+    if res.code != 404 then
+      # something failed
+      logger.error "(#{id}) received error code #{res.code} from puavo-rest, " \
+                   "unable to determine if the username is available"
+      logger.error "(#{id}) full server response: |#{res}|"
+      mattermost.send(logger, "(#{id}) received error #{res.code} from puavo-rest " \
+                      "while checking for username availability")
+      ret[:status] = :server_error
+      return ret
+    end
+
+    # 404 == not found, so the username is available
+    logger.info "(#{id}) the username is available"
+
+    return ret
+  end
+
+  def create_user(puavo_rest, ret)
+    logger.info "(#{id}) trying to create a new account"
+
+    user_data = {
+      'email'      => @email,
+      'first_name' => @first_name,
+      'last_name'  => @last_name,
+      'locale'     => @language,    # this has been validated already
+      'password'   => @password,
+      'roles'      => [ 'student' ],
+      'school_dns' => @target_school_dn,
+      'username'   => @username,
+    }
+
+    # puavo-rest does not like empty telephone numbers,
+    # set this only if non-empty
+    if !@phone.empty? then
+      user_data['telephone_number'] = @phone
+    end
+
+    res = puavo_rest.post('/v3/users', {}, user_data)
+
+    if res.code == 400 then
+      # The account was NOT created
+      logger.error "(#{id}) account creation failed, got a 400 error"
+      logger.error "(#{id}) full response: |#{res}|"
+
+      # Try to dig up more information from the puavo-rest's response
+      res_json = JSON.parse(res)
+
+      if res_json.dig('error', 'code') == 'ValidationError' then
+        invalid = res_json.dig('error', 'meta', 'invalid_attributes')
+
+        if invalid.include?('email') then
+          email = invalid['email'][0]
+
+          case email['code']
+            when 'email_not_unique'
+              # A duplicate email address
+              logger.error "(#{id}) email address \"#{user.email}\" is already in use"
+
+              ret[:status] = :duplicate_email
+              return ret
+            else
+              # Something's wrong with the email address, but we don't know what
+              mattermost.send(logger, "(#{id}) got a 400 error from puavo-rest, " \
+                              "new account NOT created! #{res}")
+
+              ret[:status] = :server_error
+              return ret
+          end
+
+        elsif invalid.include?('username')
+          case invalid['username'][0]['code']
+            # XXX when 'do we get not unique error here?'
+            when 'username_too_short'
+              # The username is too short
+              logger.error "(#{id}) username \"#{user.username}\" is too short"
+
+              ret[:status] = :username_too_short
+              return ret
+          end
+        end
+      end
+
+      # We don't know why the account could not be created. This is ugly,
+      # because we can only return a "generic" error to the user, who
+      # then has to contact us.
+      ret[:status] = :server_error
+      return ret
+    end
+
+    if res.code != 200 then
+      # Something else failed
+      logger.error "(#{id}) account creation failed, got error #{res.code}"
+      logger.error "(#{id}) full response: |#{res}|"
+      mattermost.send(logger, "(#{id}) received error #{res.code} from puavo-rest, " \
+                      "new account NOT created! #{res}")
+
+      ret[:status] = :server_error
+      return ret
+    end
+
+    return ret
+  end
 end
 
 module PuavoAccounts
@@ -289,6 +436,50 @@ module PuavoAccounts
       logger.error "    code: #{err.class.name}"
       logger.error "    message: #{err.message}"
       logger.error "    backtrace: #{err.backtrace}"
+    end
+
+    def send_confirmation_email(user, ret)
+      # Send a confirmation email
+      send_retried = false
+
+      begin
+        subject = t.api.register_email.subject
+
+        body = erb(:successfully_email_message,
+                   :layout => false,
+                   :locals => {
+                     :user => {
+                       'first_name' => user.first_name,
+                       'username'   => user.username,
+                      }
+                   })
+
+        $mailer.send(:to => user.email, :subject => subject, :body => body)
+
+        logger.info "(#{id}) sent a confirmation email to \"#{user.email}\""
+        ret[:email_sent] = true
+      rescue StandardError => error
+        logger.error "(#{id}) email sending failed:"
+        logger.error "(#{id})    address: #{user.email}"
+        logger.error "(#{id})    error: #{error}"
+
+        # XXX Try again if there was a network problem, but only once.
+        # XXX (A dirty hack that can be removed once we have a properly
+        # XXX functioning network).
+        if !send_retried && error.to_s.include?('Connection reset by peer') then
+          logger.error "(#{id})    --> Retrying once"
+          send_retried = true
+          sleep(1)
+          retry
+        end
+
+        mattermost.send(logger, "(#{id}) new user \"#{user.username}\" successfully " \
+                        "registered, but the confirmation email could not be sent: #{error}")
+
+        ret[:email_sent] = false
+      end
+
+      return ret
     end
 
     # --------------------------------------------------------------------------
@@ -363,7 +554,8 @@ module PuavoAccounts
       rest_password = org['password']
       target_school_dn = nil
 
-      puavo_rest = PuavoRestWrapper.new(rest_host, rest_domain)
+      puavo_rest = PuavoRestWrapper.new(rest_host, rest_domain, rest_user,
+                                        rest_password)
 
       # ------------------------------------------------------------------------
       # Verify device registration
@@ -401,30 +593,19 @@ module PuavoAccounts
 
       # ------------------------------------------------------------------------
       # Is the username available?
-
-      logger.info "(#{id}) checking if the username (#{user.username}) is available"
+      #
+      # XXX this should be pointless if user creation could tell us that
+      # XXX the reason for failure is that username is already reserved
 
       begin
-        res = puavo_rest.get(rest_user, rest_password, "/v3/users/#{user.username}")
-
-        if res.code == 404
-          # not found, so the username is available
-          logger.info "(#{id}) the username is available"
-        elsif res.code == 200
-          # found, username is already used
-          logger.error "(#{id}) the username is NOT available"
-          ret[:status] = :username_unavailable
-          return 409, ret.to_json
-        else
-          # something else failed
-          logger.error "(#{id}) received error code #{res.code} from puavo-rest, " \
-                       "unable to determine if the username is available"
-          logger.error "(#{id}) full server response: |#{res}|"
-          mattermost.send(logger, "(#{id}) received error #{res.code} from puavo-rest " \
-                          "while checking for username availability")
-
-          ret[:status] = :server_error
-          return 500, ret.to_json
+        ret = user.user_is_available(puavo_rest, ret)
+        case ret[:status]
+          when :ok
+            true
+          when :username_unavailable
+            return 409, ret.to_json
+          else
+            return 500, ret.to_json
         end
       rescue StandardError => e
         logger.error "(#{id}) caught an exception while checking if " \
@@ -436,160 +617,21 @@ module PuavoAccounts
         return 500, ret.to_json
       end
 
+      logger.info "(#{id}) checking if the username (#{user.username}) is available"
+
+
       # ------------------------------------------------------------------------
       # Create the user!
 
-      logger.info "(#{id}) trying to create a new account"
-
-      user_data = {
-        'first_name' => user.first_name,
-        'last_name' => user.last_name,
-        'username' => user.username,
-        'email' => user.email,
-        'password' => user.password,
-        'locale' => user.language,    # this has been validated already
-        'roles' => ['student'],
-        'school_dns' => target_school_dn,
-      }
-
-      # puavo-rest does not like empty telephone numbers,
-      # set this only if non-empty
-      if !user.phone.empty? then
-        user_data['telephone_number'] = user.phone
-      end
-
       begin
-        res = puavo_rest.post(rest_user, rest_password, '/v3/users', [], user_data)
-
-        if res.code == 200
-          # The account was created
-          logger.info "(#{id}) new user account \"#{user.username}\" created!"
-
-          # Try to set the newly-created account as the primary user
-          # for the device. If this fails, do nothing, because the
-          # first login will do it too.
-          begin
-            # Get the user DN
-            result = puavo_rest.get(rest_user, rest_password, "/v3/users/#{user.username}")
-            user_dn = JSON.parse(result)['dn']
-
-            logger.info "(#{id}) setting the primary user of the device \"#{machine.hostname} " \
-                        "to \"#{user.username}\" (\"#{user_dn}\")"
-
-            # Update device info
-            device_data = {
-              'primary_user_dn' => user_dn
-            }
-
-            result = puavo_rest.post(rest_user, rest_password,
-                               "/v3/devices/#{machine.hostname}",
-                               { :hostname => machine.hostname },
-                               device_data)
-
-            logger.info "(#{id}) successfully set \"#{user.username}\" as the " \
-                        "primary user of the device \"#{machine.hostname}\""
-          rescue StandardError => e
-            logger.error "(#{id}) could not set \"#{user.username}\" as the " \
-                         "primary user for the device \"#{machine.hostname}\": #{e}"
-            mattermost.send(logger, "(#{id}) new user successfully registered " \
-                            "on device \"#{machine.hostname}\", but the user could " \
-                            "not be set as the primary user: #{e}")
-          end
-
-          # Send a confirmation email
-          send_retried = false
-
-          begin
-            subject = t.api.register_email.subject
-
-            body = erb(:successfully_email_message,
-                       :layout => false,
-                       :locals => {
-                         :user => {
-                           'first_name' => user.first_name,
-                           'username' => user.username,
-                          }
-                       })
-
-            $mailer.send(:to => user.email, :subject => subject, :body => body)
-
-            logger.info "(#{id}) sent a confirmation email to \"#{user.email}\""
-            ret[:email_sent] = true
-          rescue StandardError => error
-            logger.error "(#{id}) email sending failed:"
-            logger.error "(#{id})    address: #{user.email}"
-            logger.error "(#{id})    error: #{error}"
-
-            # Try again if there was a network problem, but only once
-            if !send_retried && error.to_s.include?('Connection reset by peer')
-              logger.error "(#{id})    --> Retrying once"
-              send_retried = true
-              sleep(1)
-              retry
-            end
-
-            mattermost.send(logger, "(#{id}) new user \"#{user.username}\" successfully " \
-                            "registered, but the confirmation email could not be sent: #{error}")
-
-            ret[:email_sent] = false
-          end
-
-        elsif res.code == 400
-          # The account was NOT created
-          logger.error "(#{id}) account creation failed, got a 400 error"
-          logger.error "(#{id}) full response: |#{res}|"
-
-          # Try to dig up more information from the puavo-rest's response
-          res_json = JSON.parse(res)
-
-          if res_json.dig('error', 'code') == 'ValidationError'
-            invalid = res_json.dig('error', 'meta', 'invalid_attributes')
-
-            if invalid.include?('email')
-              email = invalid['email'][0]
-
-              case email['code']
-                when 'email_not_unique'
-                  # A duplicate email address
-                  logger.error "(#{id}) email address \"#{user.email}\" is already in use"
-
-                  ret[:status] = :duplicate_email
-                  return 409, ret.to_json
-                else
-                  # Something's wrong with the email address, but we don't know what
-                  mattermost.send(logger, "(#{id}) got a 400 error from puavo-rest, " \
-                                  "new account NOT created! #{res}")
-
-                  ret[:status] = :server_error
-                  return 500, ret.to_json
-              end
-
-            elsif invalid.include?('username')
-              case invalid['username'][0]['code']
-                when 'username_too_short'
-                  # The username is too short
-                  logger.error "(#{id}) username \"#{user.username}\" is too short"
-
-                  ret[:status] = :username_too_short
-                  return 409, ret.to_json
-              end
-            end
-          end
-
-          # We don't know why the account could not be created. This is ugly,
-          # because we can only return a "generic" error to the user, who
-          # then has to contact us.
-          ret[:status] = :server_error
-          return 500, ret.to_json
-        else
-          # Something else failed
-          logger.error "(#{id}) account creation failed, got error #{res.code}"
-          logger.error "(#{id}) full response: |#{res}|"
-          mattermost.send(logger, "(#{id}) received error #{res.code} from puavo-rest, " \
-                          "new account NOT created! #{res}")
-
-          ret[:status] = :server_error
-          return 500, ret.to_json
+        ret = user.create_user(puavo_rest)
+        case ret[:status]
+          when :ok
+            true
+          when :duplicate_email, :username_too_short
+            return 409, ret.to_json
+          else
+            return 500, ret.to_json
         end
       rescue StandardError => e
         logger.error "(#{id}) caught an exception \"#{e}\" while creating a new account"
@@ -599,11 +641,28 @@ module PuavoAccounts
         return 500, ret.to_json
       end
 
+      # The account was created
+      logger.info "(#{id}) new user account \"#{user.username}\" created!"
+
+      begin
+        # Try to set the newly-created account as the primary user
+        # for the device. If this fails, do nothing, because the
+        # first login will do it too.
+        user.set_primary_user(puavo_rest, machine)
+      rescue StandardError => e
+        logger.error "(#{id}) could not set \"#{user.username}\" as the " \
+                     "primary user for the device \"#{machine.hostname}\": #{e}"
+        mattermost.send(logger, "(#{id}) new user successfully registered " \
+                        "on device \"#{machine.hostname}\", but the user could " \
+                        "not be set as the primary user: #{e}")
+      end
+
+      ret = send_confirmation_email(user, ret)
+
       # ------------------------------------------------------------------------
       # All good?
 
       # If we get here, the account was created and nothing failed.
-      # ret['status'] should still be :ok
 
       return 200, ret.to_json
     end
