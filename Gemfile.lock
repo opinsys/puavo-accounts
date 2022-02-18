@@ -22,7 +22,6 @@ GEM
     http-cookie (1.0.4)
       domain_name (~> 0.5)
     http-form_data (2.3.0)
-    jwt (2.3.0)
     llhttp-ffi (0.4.0)
       ffi-compiler (~> 1.0)
       rake (~> 13.0)
@@ -82,7 +81,6 @@ PLATFORMS
 DEPENDENCIES
   byebug
   http
-  jwt
   pony
   pry
   puma

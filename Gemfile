@@ -7,7 +7,6 @@ gem "sinatra-r18n"
 gem "pony"
 gem "http"
 gem "webmock"
-gem "jwt"
 gem "byebug"
 gem "pry"
 
