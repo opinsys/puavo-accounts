@@ -600,7 +600,7 @@ module PuavoAccounts
         # Try to set the newly-created account as the primary user
         # for the device. If this fails, do nothing, because the
         # first login will do it too.
-        user.set_primary_user(puavo_rest, machine)
+        machine.set_primary_user(puavo_rest, user.username)
       rescue StandardError => e
         log.louderror("could not set \"#{user.username}\" as the " \
                       "primary user for the device \"#{machine.hostname}\": #{e}")
