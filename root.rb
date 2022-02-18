@@ -4,7 +4,6 @@ require "sinatra/json"
 require "sinatra/r18n"
 require "http"
 
-require_relative "models/user"
 require_relative "lib/mailer"
 require_relative "lib/mattermost"
 
@@ -540,7 +539,7 @@ module PuavoAccounts
         user = User.new(data['user'], log)
         machine = Machine.new(data['machine'], log)
       rescue StandardError => e
-        log.louderror('client sent incomplete user/machine data')
+        log.louderror("client sent incomplete user/machine data: #{ e.message }")
         ret[:status] = :incomplete_data
         return 400, ret.to_json
       end
