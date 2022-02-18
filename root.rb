@@ -1,11 +1,11 @@
-require "json"
-require "sinatra/base"
-require "sinatra/json"
-require "sinatra/r18n"
-require "http"
+require 'http'
+require 'json'
+require 'sinatra/base'
+require 'sinatra/json'
+require 'sinatra/r18n'
 
-require_relative "lib/mailer"
-require_relative "lib/mattermost"
+require_relative 'lib/mailer'
+require_relative 'lib/mattermost'
 
 class PuavoRestWrapper
   def initialize(host, domain, username, password)
