@@ -26,8 +26,8 @@ class PuavoRestWrapper
   end
 
   def get(url, params={}, username=nil, password=nil)
-    username ||= @username
-    password ||= @password
+    username ||= @username
+    password ||= @password
     auth_request(username, password).get("#{@host}#{url}", :params => params)
   end
 
