@@ -85,7 +85,7 @@ def invalid_field(name); { 'name' => name, 'reason' => 'failed_validation' }; en
 def too_long(name)     ; { 'name' => name, 'reason' => 'too_long'          }; end
 
 class Machine
-  attr_reader :dn, :domain, :hostname, :password
+  attr_reader :dn, :domain, :hostname, :password, :target_school_dn
 
   def initialize(machinedata, log)
     @log = log
@@ -300,7 +300,7 @@ class User
 
     # TODO: Validate the address better?
     if !@email.include?('@') || @email.count('.') == 0 then
-      @log.error "the email address (\"#{@email}\") contains invalid characters"
+      @log.error "the email address (\"#{@email}\") is not valid"
       ret[:status] = :invalid_email
       return ret
     end
@@ -344,7 +344,7 @@ class User
     return ret
   end
 
-  def create_user(puavo_rest, ret)
+  def create_user(puavo_rest, machine, ret)
     @log.info 'trying to create a new account'
 
     user_data = {
@@ -354,7 +354,7 @@ class User
       'locale'     => @language,    # this has been validated already
       'password'   => @password,
       'roles'      => [ 'student' ],
-      'school_dns' => @target_school_dn,
+      'school_dns' => machine.target_school_dn,
       'username'   => @username,
     }
 
@@ -559,7 +559,6 @@ module PuavoAccounts
       org = CONFIG['organisations'][machine.domain]
       rest_user = org['username']
       rest_password = org['password']
-      target_school_dn = nil
 
       puavo_rest = PuavoRestWrapper.new(rest_host, rest_domain, rest_user,
                                         rest_password)
@@ -624,7 +623,7 @@ module PuavoAccounts
       # Create the user!
 
       begin
-        ret = user.create_user(puavo_rest)
+        ret = user.create_user(puavo_rest, machine, ret)
         case ret[:status]
           when :ok
             true
