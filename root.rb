@@ -56,8 +56,17 @@ class LogWithId
     @logger.info("(#{@id}) #{msg}")
   end
 
+  def loudinfo(msg)
+    info(msg)
+    send_to_mattermost(msg)
+  end
+
   def louderror(msg)
     error(msg)
+    send_to_mattermost("ERROR: #{msg}")
+  end
+
+  def send_to_mattermost(msg)
     begin
       $mattermost.send(@logger, msg)
     rescue StandardError => e
@@ -85,7 +94,8 @@ def invalid_field(name); { 'name' => name, 'reason' => 'failed_validation' }; en
 def too_long(name)     ; { 'name' => name, 'reason' => 'too_long'          }; end
 
 class Machine
-  attr_reader :dn, :domain, :hostname, :password, :target_school_dn
+  attr_reader :dn, :domain, :hostname, :password, :primary_user_dn,
+              :target_school_dn
 
   def initialize(machinedata, log)
     @log = log
@@ -96,6 +106,7 @@ class Machine
     @hostname = get_nested(machinedata, 'hostname')
     @password = get_nested(machinedata, 'password')
 
+    @primary_user_dn = nil
     @target_school_dn = nil
 
     # XXX machine.hostname should not be trusted to construct urls?
@@ -128,13 +139,12 @@ class Machine
     end
 
     # the dn/password combo works and the device exists
-    @log.info 'found the device'
+    @log.info "found the device #{@hostname} from Puavo"
 
     device_data = JSON.parse(res.body)
 
-    unless device_data['primary_user_dn'].nil? then
-      @log.louderror("this device already has a primary user " \
-                     "(\"#{device_data['primary_user_dn']}\")")
+    if device_data['primary_user_dn'] then
+      @primary_user_dn = device_data['primary_user_dn']
       ret[:status] = :device_already_in_use
       return ret
     end
@@ -442,6 +452,22 @@ module PuavoAccounts
       logger.error "    backtrace: #{err.backtrace}"
     end
 
+    def check_if_resent(puavo_rest, user, machine)
+      # If this user is the same as the primary user of this machine
+      # and user password matches (user can fetch his/her own data), we decide
+      # that the same form has been resent and should not continue with
+      # normal user registration.
+      res = puavo_rest.get("/v3/users/#{user.username}", {}, user.username,
+                           user.password)
+      if res.code == 200 then
+        user_data = JSON.parse(res.body)
+        return true if user_data['dn'] == machine.primary_user_dn
+      end
+
+      return false
+    end
+
+
     def send_confirmation_email(user, ret, log)
       # Send a confirmation email
       send_retried = false
@@ -551,6 +577,17 @@ module PuavoAccounts
 
       begin
         ret = machine.lookup_host(puavo_rest, ret)
+        if machine.primary_user_dn then
+          if check_if_resent(puavo_rest, user, machine) then
+            log.loudinfo("a resent register_user submission for " \
+                         "#{ user.username } on #{ machine.hostname }")
+            ret[:status] = :resent
+            return 200, ret.to_json
+          end
+          log.louderror("this device already has a primary user " \
+                        "(\"#{machine.primary_user_dn}\")")
+        end
+
         case ret[:status]
           when :ok
             true
@@ -594,7 +631,8 @@ module PuavoAccounts
       end
 
       # The account was created
-      log.info "new user account \"#{user.username}\" created!"
+      log.loudinfo "new user account \"#{user.username}\" was created " \
+                   "for host #{machine.hostname}"
 
       begin
         # Try to set the newly-created account as the primary user
