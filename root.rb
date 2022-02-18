@@ -320,30 +320,6 @@ class User
     return ret
   end
 
-  def user_is_available(puavo_rest, ret)
-    res = puavo_rest.get("/v3/users/#{@username}")
-    if res.code == 200 then
-      # found, username is already used
-      @log.error "the username is NOT available"
-      ret[:status] = :username_unavailable
-      return ret
-    end
-
-    if res.code != 404 then
-      # something failed
-      @log.louderror("received error #{res.code} from puavo-rest " \
-                     "while checking for username availability")
-      @log.louderror("full server response: |#{res}|")
-      ret[:status] = :server_error
-      return ret
-    end
-
-    # 404 == not found, so the username is available
-    @log.info 'the username is available'
-
-    return ret
-  end
-
   def create_user(puavo_rest, machine, ret)
     @log.info 'trying to create a new account'
 
@@ -378,30 +354,35 @@ class User
         invalid = res_json.dig('error', 'meta', 'invalid_attributes')
 
         if invalid.include?('email') then
-          email = invalid['email'][0]
+          invalid['email'].each do |attr_error|
+            case attr_error['code']
+              when 'email_not_unique'
+                # A duplicate email address
+                @log.error "email address \"#{@email}\" is already in use"
 
-          case email['code']
-            when 'email_not_unique'
-              # A duplicate email address
-              @log.error "email address \"#{user.email}\" is already in use"
-
-              ret[:status] = :duplicate_email
-              return ret
-            else
-              # Something's wrong with the email address, but we don't know what
-              @log.louderror("got a 400 error from puavo-rest, " \
-                             "new account NOT created! #{res}")
-              ret[:status] = :server_error
-              return ret
+                ret[:status] = :duplicate_email
+                return ret
+              else
+                # Something's wrong with the email address, but we don't know what
+                @log.louderror("got a 400 error from puavo-rest, " \
+                               "new account NOT created! #{res}")
+                ret[:status] = :server_error
+                return ret
+            end
           end
 
         elsif invalid.include?('username')
-          case invalid['username'][0]['code']
-            # XXX when 'do we get not unique error here?'
-            when 'username_too_short'
-              @log.error "username \"#{user.username}\" is too short"
-              ret[:status] = :username_too_short
-              return ret
+          invalid['username'].each do |attr_error|
+            case attr_error['code']
+              when 'username_not_unique'
+                @log.error "username \"#{@username}\" is not unique"
+                ret[:status] = :username_unavailable
+                return ret
+              when 'username_too_short'
+                @log.error "username \"#{@username}\" is too short"
+                ret[:status] = :username_too_short
+                return ret
+            end
           end
         end
       end
@@ -594,31 +575,6 @@ module PuavoAccounts
       end
 
       # ------------------------------------------------------------------------
-      # Is the username available?
-      #
-      # XXX this should be pointless if user creation could tell us that
-      # XXX the reason for failure is that username is already reserved
-
-      log.info "checking if the username (#{user.username}) is available"
-
-      begin
-        ret = user.user_is_available(puavo_rest, ret)
-        case ret[:status]
-          when :ok
-            true
-          when :username_unavailable
-            return 409, ret.to_json
-          else
-            return 500, ret.to_json
-        end
-      rescue StandardError => e
-        log.louderror("caught an exception while checking " \
-                      "if the username \"#{user.username}\" is available: #{e}")
-        ret[:status] = :server_error
-        return 500, ret.to_json
-      end
-
-      # ------------------------------------------------------------------------
       # Create the user!
 
       begin
@@ -626,7 +582,7 @@ module PuavoAccounts
         case ret[:status]
           when :ok
             true
-          when :duplicate_email, :username_too_short
+          when :duplicate_email, :username_too_short, :username_unavailable
             return 409, ret.to_json
           else
             return 500, ret.to_json
