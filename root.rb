@@ -1,6 +1,4 @@
 require "json"
-require "jwt"
-require "socket"
 require "sinatra/base"
 require "sinatra/json"
 require "sinatra/r18n"
