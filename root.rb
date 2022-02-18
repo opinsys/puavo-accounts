@@ -85,11 +85,6 @@ def empty_field(name)  ; { 'name' => name, 'reason' => 'empty'             }; en
 def invalid_field(name); { 'name' => name, 'reason' => 'failed_validation' }; end
 def too_long(name)     ; { 'name' => name, 'reason' => 'too_long'          }; end
 
-class MachineAlreadyInUse < StandardError; end
-class MachineNotFound     < StandardError; end
-class RestServerError     < StandardError; end
-class SetPrimaryUserError < StandardError; end
-
 class Machine
   attr_reader :dn, :domain, :hostname, :password
 
@@ -112,7 +107,7 @@ class Machine
     raise KeyError, "machine_password"            if @password.empty?
   end
 
-  def lookup_host(puavo_rest)
+  def lookup_host(puavo_rest, ret)
     # XXX should the hostname be validated first so that this url might not
     # XXX contain crazy stuff?
     res = puavo_rest.get("/v3/devices/#{@hostname}", {}, @dn, @password)
@@ -121,14 +116,16 @@ class Machine
       # the dn/password combo is not valid, so the machine is unlikely to exist
       @log.louderror("a registration was attempted from an " \
                      "unknown/unregistered device \"#{@hostname}\"!")
-      raise MachineNotFound
+      ret[:status] = :unknown_machine
+      return ret
     end
 
     if res.code != 200 then
       @log.louderror("received error #{res.code} from puavo-rest " \
                      "while determining if the client device \"#{@hostname}\" exists!")
       @log.louderror("full server response: |#{res}|")
-      raise RestServerError
+      ret[:status] = :server_error
+      return ret
     end
 
     # the dn/password combo works and the device exists
@@ -139,7 +136,8 @@ class Machine
     unless device_data['primary_user_dn'].nil? then
       @log.louderror("this device already has a primary user " \
                      "(\"#{device_data['primary_user_dn']}\")")
-      raise MachineAlreadyInUse
+      ret[:status] = :device_already_in_use
+      return ret
     end
 
     @log.info "this device does not have a primary user"
@@ -150,18 +148,21 @@ class Machine
     if @target_school_dn.nil? then
       @log.louderror("target_school_dn is nil after the device information " \
                      "has been retrieved!")
-      raise RestServerError
+      ret[:status] = :server_error
+      return ret
     end
 
     @log.info "target school DN: \"#{@target_school_dn}\""
+
+    return ret
   end
 
   def set_primary_user(puavo_rest, username)
     # Get the user DN
     res = puavo_rest.get("/v3/users/#{username}")
     if res.code != 200 then
-      # XXX we could show the errors provided by puavo rest
-      raise SetPrimaryUserError
+      raise "could not retrieve information for #{username}: " \
+            "puavo-rest returned #{res.code}"
     end
 
     user_dn = JSON.parse(res)['dn']
@@ -177,8 +178,8 @@ class Machine
                          device_data)
 
     if res.code != 200 then
-      # XXX we could show the errors provided by puavo rest
-      raise SetPrimaryUserError
+      raise "could not update primary user #{username} to #{@hostname}: " \
+            "puavo-rest returned #{res.code}"
     end
 
     @log.info "successfully set \"#{username}\" as the " \
@@ -571,16 +572,15 @@ module PuavoAccounts
                "dn=\"#{machine.dn}\", password=\"#{machine.password[0..9]}...\")"
 
       begin
-        machine.lookup_host(puavo_rest)
-      rescue MachineNotFound => e
-        ret[:status] = :unknown_machine
-        return 401, ret.to_json
-      rescue MachineAlreadyInUse => e
-        ret[:status] = :device_already_in_use
-        return 401, ret.to_json
-      rescue RestServerError => e
-        ret[:status] = :server_error
-        return 500, ret.to_json
+        ret = machine.lookup_host(puavo_rest, ret)
+        case ret[:status]
+          when :ok
+            true
+          when :device_already_in_use, :unknown_machine
+            return 401, ret.to_json
+          else
+            return 500, ret.to_json
+        end
       rescue StandardError => e
         log.louderror("caught an exception while determining " \
                       "if the client device \"#{machine.hostname}\" exists: #{e}")
