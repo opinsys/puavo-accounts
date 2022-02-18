@@ -528,8 +528,7 @@ module PuavoAccounts
       begin
         data = JSON.parse(body)
       rescue StandardError => e
-        loudaerrormsg('client sent malformed JSON')
-
+        log.louderror('client sent malformed JSON')
         ret[:status] = :malformed_json
         return 400, ret.to_json
       end
