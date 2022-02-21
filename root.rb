@@ -263,14 +263,10 @@ class User
       ret[:status] = :missing_data
     end
 
-    if @email.empty? then
-      @log.error 'user email is empty'
-      ret[:failed_fields] << empty_field('email')
-      ret[:status] = :missing_data
-    elsif @email.length > MAX_EMAIL_LENGTH then
+    if @email.length > MAX_EMAIL_LENGTH then
       @log.error 'user email is too long'
       ret[:failed_fields] << too_long('email')
-      ret[:status] = :missing_data
+      ret[:status] = :invalid_email
     end
 
     if @phone.length > MAX_PHONE_LENGTH then
@@ -309,7 +305,7 @@ class User
     end
 
     # TODO: Validate the address better?
-    if !@email.include?('@') || @email.count('.') == 0 then
+    if !@email.empty? && (!@email.include?('@') || @email.count('.') == 0) then
       @log.error "the email address (\"#{@email}\") is not valid"
       ret[:status] = :invalid_email
       return ret
@@ -333,8 +329,8 @@ class User
   def create_user(puavo_rest, machine, ret)
     @log.info 'trying to create a new account'
 
+    # these are required attributes
     user_data = {
-      'email'      => @email,
       'first_name' => @first_name,
       'last_name'  => @last_name,
       'locale'     => @language,    # this has been validated already
@@ -343,6 +339,11 @@ class User
       'school_dns' => machine.target_school_dn,
       'username'   => @username,
     }
+
+    # email is not required
+    if !@email.empty? then
+      user_data['email'] = @email
+    end
 
     # puavo-rest does not like empty telephone numbers,
     # set this only if non-empty
@@ -469,6 +470,11 @@ module PuavoAccounts
 
 
     def send_confirmation_email(user, ret, log)
+      if user.email.empty? then
+        log.info 'user did not provide an email address, not sending email'
+        return ret
+      end
+
       # Send a confirmation email
       send_retried = false
 
