@@ -9,7 +9,6 @@ require_relative 'lib/mattermost'
 
 class PuavoRestWrapper
   def initialize(host, domain, username, password)
-    # XXX check that these are all set?
     @domain   = domain
     @host     = host
     @password = password
@@ -75,20 +74,6 @@ class LogWithId
   end
 end
 
-def get_nested(from, *key)
-  # XXX this should ensure that we do not get nil as value...
-  # XXX if that is possible, those could be replaced by empty strings?
-
-  now = from
-
-  key.each_with_index do |k, i|
-    is_last = (i == key.size - 1)
-    raise KeyError, k unless now.include?(k)
-    return now[k] if is_last
-    now = now[k]
-  end
-end
-
 def empty_field(name)  ; { 'name' => name, 'reason' => 'empty'             }; end
 def invalid_field(name); { 'name' => name, 'reason' => 'failed_validation' }; end
 def too_long(name)     ; { 'name' => name, 'reason' => 'too_long'          }; end
@@ -100,26 +85,28 @@ class Machine
   def initialize(machinedata, log)
     @log = log
 
-    # XXX our input validation could be stricter
-    @dn       = get_nested(machinedata, 'dn')
-    @domain   = get_nested(machinedata, 'organisation_domain')
-    @hostname = get_nested(machinedata, 'hostname')
-    @password = get_nested(machinedata, 'password')
+    raise 'machine data is not a hash' unless machinedata.kind_of?(Hash)
+
+    attrlist = %w(dn hostname organisation_domain password)
+    attrlist.each do |attr|
+      raise "machine attribute #{ attr } is missing or empty" \
+        unless machinedata[attr].kind_of?(String) && !machinedata[attr].empty?
+    end
+
+    # check hostname more carefully, it is used to construct urls
+    raise 'machine hostname contains /' \
+      if machinedata['hostname'].include?('/')
+
+    @dn       = machinedata['dn']
+    @domain   = machinedata['organisation_domain']
+    @hostname = machinedata['hostname']
+    @password = machinedata['password']
 
     @primary_user_dn = nil
     @target_school_dn = nil
-
-    # XXX machine.hostname should not be trusted to construct urls?
-
-    raise KeyError, "machine_dn"                  if @dn.empty?
-    raise KeyError, "machine_organisation_domain" if @domain.empty?
-    raise KeyError, "machine_hostname"            if @hostname.empty?
-    raise KeyError, "machine_password"            if @password.empty?
   end
 
   def lookup_host(puavo_rest, ret)
-    # XXX should the hostname be validated first so that this url might not
-    # XXX contain crazy stuff?
     res = puavo_rest.get("/v3/devices/#{@hostname}", {}, @dn, @password)
 
     if res.code == 401 then
@@ -211,17 +198,33 @@ class User
   def initialize(userdata, log)
     @log = log
 
-    # XXX get_nested() should ensure that values can not be nil
-    # XXX our input validation could be stricter
-    @email      = get_nested(userdata, 'email'     ).strip()
-    @first_name = get_nested(userdata, 'first_name').strip()
-    @language   = get_nested(userdata, 'language'  ).strip()
-    @last_name  = get_nested(userdata, 'last_name' ).strip()
-    @phone      = get_nested(userdata, 'phone'     ).strip()
-    @username   = get_nested(userdata, 'username'  ).strip()
+    raise 'user data is not a hash' unless userdata.kind_of?(Hash)
 
-    @password_confirm = get_nested(userdata, 'password_confirm')
-    @password         = get_nested(userdata, 'password')
+    # these can be empty
+    raise 'user email is not a string' unless userdata['email'].kind_of?(String)
+    raise 'user phone is not a string' unless userdata['phone'].kind_of?(String)
+
+    # these can not be empty
+    attrlist = %w(first_name language last_name password password_confirm
+                  username)
+    attrlist.each do |attr|
+      raise "user attribute #{ attr } is missing" \
+        unless userdata[attr].kind_of?(String)
+    end
+
+    # check username more carefully, it is used to construct urls
+    raise 'user username contains /' if userdata['username'].include?('/')
+
+    @email      = userdata['email'     ].strip()
+    @first_name = userdata['first_name'].strip()
+    @language   = userdata['language'  ].strip()
+    @last_name  = userdata['last_name' ].strip()
+    @phone      = userdata['phone'     ].strip()
+    @username   = userdata['username'  ].strip()
+
+    # no strip for these
+    @password         = userdata['password']
+    @password_confirm = userdata['password_confirm']
   end
 
   def validate_user(ret)
@@ -547,9 +550,11 @@ module PuavoAccounts
       end
 
       begin
-        # XXX our input validation could be stricter
+        raise 'data sent by client is not a hash' unless data.kind_of?(Hash)
+
         user = User.new(data['user'], log)
         machine = Machine.new(data['machine'], log)
+
       rescue StandardError => e
         log.louderror("client sent incomplete user/machine data: #{ e.message }")
         ret[:status] = :incomplete_data
