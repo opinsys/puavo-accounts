@@ -7,8 +7,15 @@ require 'sinatra/r18n'
 require_relative 'lib/mailer'
 require_relative 'lib/mattermost'
 
+class OrgNotConfigured < StandardError; end
+
 class PuavoRestWrapper
-  def initialize(domain)
+  def initialize(domain, log)
+    unless CONFIG['organisations'].include?(domain) then
+      log.louderror("unknown or invalid organisation \"#{ domain }\"")
+      raise OrgNotConfigured
+    end
+
     host = CONFIG['puavo-rest']
     org = CONFIG['organisations'][domain]
 
@@ -550,9 +557,12 @@ module PuavoAccounts
       begin
         data = JSON.parse(request.body.read)
         machine = Machine.new(data, log)
-        puavo_rest = PuavoRestWrapper.new(machine.domain)
+        puavo_rest = PuavoRestWrapper.new(machine.domain, log)
         ret = machine.lookup_host(puavo_rest, ret)
         ret[:primary_user] = machine.primary_user
+      rescue OrgNotConfigured => e
+        ret[:status] = :invalid_organisation_domain
+        return 400, ret.to_json
       rescue StandardError => e
         log.error("could not lookup host information from puavo:" \
                      + " #{ e.message }")
@@ -602,16 +612,14 @@ module PuavoAccounts
 
       log.info "domain: #{ machine.domain }"
 
-      # Is the domain configured in the config file?
-      unless CONFIG['organisations'].include?(machine.domain) then
-        log.louderror("unknown or invalid organisation \"#{machine.domain}\"")
+      # We can use machine.domain but only if we use lookup_host() soon
+      # so ensure that machine really belongs to this domain.
+      begin
+        puavo_rest = PuavoRestWrapper.new(machine.domain, log)
+      rescue OrgNotConfigured => e
         ret[:status] = :invalid_organisation_domain
         return 400, ret.to_json
       end
-
-      # We can use machine.domain but only if we use lookup_host() soon
-      # so ensure that machine really belongs to this domain.
-      puavo_rest = PuavoRestWrapper.new(machine.domain)
 
       # ------------------------------------------------------------------------
       # Verify device registration
