@@ -8,11 +8,14 @@ require_relative 'lib/mailer'
 require_relative 'lib/mattermost'
 
 class PuavoRestWrapper
-  def initialize(host, domain, username, password)
+  def initialize(domain)
+    host = CONFIG['puavo-rest']
+    org = CONFIG['organisations'][domain]
+
     @domain   = domain
     @host     = host
-    @password = password
-    @username = username
+    @password = org['password']
+    @username = org['username']
   end
 
   def auth_request(username, password)
@@ -65,6 +68,14 @@ class LogWithId
     send_to_mattermost("ERROR: #{msg}")
   end
 
+  def request_info(msg, request)
+    remote_addr     = request.env['REMOTE_ADDR']          || '?'
+    x_real_ip       = request.env['HTTP_X_REAL_IP']       || '?'
+    x_forwarded_for = request.env['HTTP_X_FORWARDED_FOR'] || '?'
+
+    info "#{ msg } from IP=#{ remote_addr } (x_real_ip=#{ x_real_ip }, x_forwarded_for=#{ x_forwarded_for })"
+  end
+
   def send_to_mattermost(msg)
     begin
       $mattermost.send(@logger, msg)
@@ -79,8 +90,8 @@ def invalid_field(name); { 'name' => name, 'reason' => 'failed_validation' }; en
 def too_long(name)     ; { 'name' => name, 'reason' => 'too_long'          }; end
 
 class Machine
-  attr_reader :dn, :domain, :hostname, :password, :primary_user_dn,
-              :target_school_dn
+  attr_reader :dn, :domain, :hostname, :password, :primary_user,
+              :primary_user_dn, :target_school_dn
 
   def initialize(machinedata, log)
     @log = log
@@ -102,7 +113,8 @@ class Machine
     @hostname = machinedata['hostname']
     @password = machinedata['password']
 
-    @primary_user_dn = nil
+    @primary_user     = nil
+    @primary_user_dn  = nil
     @target_school_dn = nil
   end
 
@@ -131,6 +143,7 @@ class Machine
     device_data = JSON.parse(res.body)
 
     if device_data['primary_user_dn'] then
+      @primary_user    = device_data['primary_user']
       @primary_user_dn = device_data['primary_user_dn']
       ret[:status] = :device_already_in_use
       return ret
@@ -524,13 +537,39 @@ module PuavoAccounts
     # --------------------------------------------------------------------------
     # --------------------------------------------------------------------------
 
+    post '/check_host' do
+      log = LogWithId.new(logger)
+
+      log.request_info('received a check host request', request)
+
+      ret = {
+        :primary_user => nil,
+        :status       => :ok,
+      }
+
+      begin
+        data = JSON.parse(request.body.read)
+        machine = Machine.new(data, log)
+        puavo_rest = PuavoRestWrapper.new(machine.domain)
+        ret = machine.lookup_host(puavo_rest, ret)
+        ret[:primary_user] = machine.primary_user
+      rescue StandardError => e
+        log.error("could not lookup host information from puavo:" \
+                     + " #{ e.message }")
+        ret[:status] = :error
+        return 400, ret.to_json
+      end
+
+      log.info("returning primary user for host #{ machine.hostname }:" \
+                 + " (#{ ret[:primary_user] })")
+
+      return 200, ret.to_json
+    end
+
     post '/register_user' do
       log = LogWithId.new(logger)
 
-      remote_addr = request.env['REMOTE_ADDR'] || '?'
-      x_real_ip = request.env['HTTP_X_REAL_IP'] || '?'
-      x_forwarded_for = request.env['HTTP_X_FORWARDED_FOR'] || '?'
-      log.info "received a new user registration request from IP=#{remote_addr} (x_real_ip=#{x_real_ip}, x_forwarded_for=#{x_forwarded_for})"
+      log.request_info('received a new user registration request', request)
 
       body = request.body.read
 
@@ -570,15 +609,9 @@ module PuavoAccounts
         return 400, ret.to_json
       end
 
-      rest_host = CONFIG['puavo-rest']
-      rest_domain = machine.domain    # can use this directly, we've validated it
-
-      org = CONFIG['organisations'][machine.domain]
-      rest_user = org['username']
-      rest_password = org['password']
-
-      puavo_rest = PuavoRestWrapper.new(rest_host, rest_domain, rest_user,
-                                        rest_password)
+      # We can use machine.domain but only if we use lookup_host() soon
+      # so ensure that machine really belongs to this domain.
+      puavo_rest = PuavoRestWrapper.new(machine.domain)
 
       # ------------------------------------------------------------------------
       # Verify device registration
