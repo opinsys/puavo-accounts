@@ -544,7 +544,7 @@ module PuavoAccounts
     # --------------------------------------------------------------------------
     # --------------------------------------------------------------------------
 
-    post '/check_host' do
+    post '/register_user/check_host' do
       log = LogWithId.new(logger)
 
       log.request_info('received a check host request', request)
