@@ -5,8 +5,6 @@ require 'webmock/minitest'
 ENV["RACK_ENV"] = "test"
 
 require_relative "../config.rb"
-
-require_relative "../models/user"
 require_relative "../root"
 
 include Rack::Test::Methods
