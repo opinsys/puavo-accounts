@@ -27,14 +27,12 @@ install: build
 	cp -R *.*rb *.ru Gemfile* Makefile i18n lib models public vendor \
 		views .bundle $(DESTDIR)$(installdir)
 
-.PHONY: install-build-dep
-install-build-dep:
-	mk-build-deps --install debian/control \
-		-s sudo --tool 'apt-get --yes' --remove
-	rm -f puavo-accounts-build-deps_*
+.PHONY: install-build-deps
+install-build-deps:
+	mk-build-deps --install -s sudo --tool 'apt-get --yes' --remove debian/control
 
 .PHONY: deb
-deb: install-build-dep
+deb: install-build-deps
 	dpkg-buildpackage -us -uc
 
 .PHONY: test
@@ -48,3 +46,7 @@ server:
 .PHONY: server-dev
 server-dev:
 	$(BUNDLE) exec shotgun --host 0.0.0.0 --port 9491 --server puma
+
+.PHONY: upload-debs
+upload-debs:
+	dput puavo ../puavo-accounts_*.changes
