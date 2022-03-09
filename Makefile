@@ -29,7 +29,7 @@ install: build
 
 .PHONY: install-build-deps
 install-build-deps:
-	mk-build-deps --install -s sudo --tool 'apt-get --yes' --remove debian/control
+	mk-build-deps --install --tool 'apt-get --yes' --remove debian/control
 
 .PHONY: deb
 deb: install-build-deps
