@@ -84,10 +84,12 @@ class LogWithId
   end
 
   def send_to_mattermost(msg)
-    begin
-      $mattermost.send(@logger, msg)
-    rescue StandardError => e
-      @logger.error("error in sending a message to Mattermost: #{e}")
+    Thread.new do
+      begin
+        $mattermost.send(@logger, msg)
+      rescue StandardError => e
+        @logger.error("error in sending a message to Mattermost: #{e}")
+      end
     end
   end
 end
@@ -491,15 +493,11 @@ module PuavoAccounts
       return false
     end
 
-
-    def send_confirmation_email(user, ret, log)
+    def send_confirmation_email(user, log)
       if user.email.empty? then
         log.info 'user did not provide an email address, not sending email'
-        return ret
+        return
       end
-
-      # Send a confirmation email
-      send_retried = false
 
       begin
         subject = t.api.register_email.subject
@@ -513,32 +511,34 @@ module PuavoAccounts
                       }
                    })
 
-        $mailer.send(:to => user.email, :subject => subject, :body => body)
+        Thread.new do
+          send_retried = false
 
-        log.info "sent a confirmation email to \"#{user.email}\""
-        ret[:email_sent] = true
-      rescue StandardError => error
-        log.error "email sending failed:"
-        log.error "   address: #{user.email}"
-        log.error "   error: #{error}"
+          begin
+            $mailer.send(:to => user.email, :subject => subject, :body => body)
+            log.info "sent a confirmation email to \"#{user.email}\""
+          rescue StandardError => error
+            log.error "email sending failed:"
+            log.error "   address: #{user.email}"
+            log.error "   error: #{error}"
 
-        # XXX Try again if there was a network problem, but only once.
-        # XXX (A dirty hack that can be removed once we have a properly
-        # XXX functioning network).
-        if !send_retried && error.to_s.include?('Connection reset by peer') then
-          log.error "    --> Retrying once"
-          send_retried = true
-          sleep(1)
-          retry
+            # XXX Try again if there was a network problem, but only once.
+            # XXX (A dirty hack that can be removed once we have a properly
+            # XXX functioning network).
+            if !send_retried && error.to_s.include?('Connection reset by peer') then
+              log.error "    --> Retrying once"
+              send_retried = true
+              sleep(1)
+              retry
+            end
+
+            log.louderror("new user \"#{user.username}\" successfully " \
+                          "registered, but the confirmation email could not be sent: #{error}")
+          end
         end
-
-        log.louderror("new user \"#{user.username}\" successfully " \
-                      "registered, but the confirmation email could not be sent: #{error}")
-
-        ret[:email_sent] = false
+      rescue StandardError => error
+        log.louderror("could not construct an email to send: #{ error }")
       end
-
-      return ret
     end
 
     # --------------------------------------------------------------------------
@@ -584,7 +584,6 @@ module PuavoAccounts
       body = request.body.read
 
       ret = {
-        :email_sent    => false,
         :failed_fields => [],
         :log_id        => log.id,
         :status        => :ok,
@@ -696,7 +695,7 @@ module PuavoAccounts
                       "primary user for the device \"#{machine.hostname}\": #{e}")
       end
 
-      ret = send_confirmation_email(user, ret, log)
+      send_confirmation_email(user, log)
 
       # ------------------------------------------------------------------------
       # All good?
