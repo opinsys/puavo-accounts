@@ -1,4 +1,5 @@
 .bundle
+debian/changelog
 debian/*debhelper*
 debian/files
 debian/puavo-accounts*

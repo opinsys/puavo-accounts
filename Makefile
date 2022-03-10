@@ -33,6 +33,12 @@ install-build-deps:
 
 .PHONY: deb
 deb: install-build-deps
+	cp -p debian/changelog.vc debian/changelog
+	env DEBFULLNAME="Puavo Org" EMAIL=dev@opinsys.fi dch --newversion \
+	    "$$(cat VERSION)+build$$(date +%s)+$$(git rev-parse HEAD)" \
+	    "Built from $$(git rev-parse HEAD)"
+	env DEBFULLNAME="Puavo Org" EMAIL=dev@opinsys.fi \
+	    dch --distribution "$$(lsb_release -cs)" --release ''
 	dpkg-buildpackage -us -uc
 
 .PHONY: test
