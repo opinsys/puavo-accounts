@@ -3,6 +3,7 @@ require 'json'
 require 'sinatra/base'
 require 'sinatra/json'
 require 'sinatra/r18n'
+require 'uri'
 
 require_relative 'lib/mailer'
 require_relative 'lib/mattermost'
@@ -329,8 +330,7 @@ class User
       return ret
     end
 
-    # TODO: Validate the address better?
-    if !@email.empty? && (!@email.include?('@') || @email.count('.') == 0) then
+    if !@email.empty? && @email !~ URI::MailTo::EMAIL_REGEXP then
       @log.error "the email address (\"#{@email}\") is not valid"
       ret[:status] = :invalid_email
       return ret
