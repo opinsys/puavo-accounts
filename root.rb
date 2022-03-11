@@ -493,7 +493,7 @@ module PuavoAccounts
       return false
     end
 
-    def send_confirmation_email(user, log)
+    def send_confirmation_email(user, machine, log)
       if user.email.empty? then
         log.info 'user did not provide an email address, not sending email'
         return
@@ -505,6 +505,9 @@ module PuavoAccounts
         body = erb(:successfully_email_message,
                    :layout => false,
                    :locals => {
+                     :machine => {
+                       'domain' => machine.domain,
+                     },
                      :user => {
                        'first_name' => user.first_name,
                        'username'   => user.username,
@@ -695,7 +698,7 @@ module PuavoAccounts
                       "primary user for the device \"#{machine.hostname}\": #{e}")
       end
 
-      send_confirmation_email(user, log)
+      send_confirmation_email(user, machine, log)
 
       # ------------------------------------------------------------------------
       # All good?
