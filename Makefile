@@ -24,8 +24,8 @@ clean:
 .PHONY: install
 install: build
 	mkdir -p $(DESTDIR)$(installdir) $(DESTDIR)$(sysconfdir)
-	cp -R *.*rb *.ru Gemfile* Makefile i18n lib public vendor \
-		views .bundle $(DESTDIR)$(installdir)
+	cp -R *.*rb *.ru Gemfile* Makefile i18n lib vendor views .bundle \
+		$(DESTDIR)$(installdir)
 
 .PHONY: install-build-deps
 install-build-deps:
