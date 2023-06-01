@@ -47,7 +47,7 @@ views:
     footer: "More information at https://lukiolaiskannettava.fi/"
   successfully_email_message:
     hello: "Hei %1!"
-    message: "Your account has been created and your username to your Lukiolaiskannettava is: %1"
+    message: "Rekisteröintisi onnistui ja käyttäjätunnuksesi Lukiolaiskannettavalle on: %1"
     footer: "Unohtuneen salasanan voit palauttaa osoitteesta: https://lukiolaiskannettava.opinsys.fi/users/password/forgot\n\nJos tarvitset neuvoja Lukiolaiskannettavan käytössä, ota yhteyttä tukipalveluumme:\n  * soittamalla numeroon 014 4591 624 (ark. klo 8-16) tai\n  * lähettämällä sähköpostia osoitteeseen tuki@opinsys.fi.\n\nOhjeet löydät https://lukiolaiskannettava.fi/ -sivustolta.\n\nYstävällisin terveisin,\n\nOpinsys Oy"
   successfully:
     description: Account creation successful!
