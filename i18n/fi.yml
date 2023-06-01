@@ -43,12 +43,12 @@ views:
   register_email_message:
     hello: Hei!
     header: "Rekisteröi käyttäjätunnus luokiolaiskannettavalle seuraavan linkin kautta:"
-    notify: "Mikäli et ole syöttänyt sähköpostiosoitetta www.lukiolaiskannettava.fi sivustolle, tämä viesti on aiheeton."
-    footer: "Lisätietoja http://www.lukiolaiskannettava.fi"
+    notify: "Mikäli et ole syöttänyt sähköpostiosoitetta lukiolaiskannettava.fi sivustolle, tämä viesti on aiheeton."
+    footer: "Lisätietoja https://lukiolaiskannettava.fi/"
   successfully_email_message:
     hello: "Hei %1!"
     message: "Rekisteröintisi onnistui ja käyttäjätunnuksesi Lukiolaiskannettavalle on: %1"
-    footer: "Unohtuneen salasanan voit palauttaa osoitteesta: https://lukiolaiskannettava.opinsys.fi/users/password/forgot\n\nJos tarvitset neuvoja Lukiolaiskannettavan käytössä ota yhteyttä tukipalveluumme.\nTukipalveluumme saat yhteyden:\n * chat-keskustelun kautta, joka löytyy www.lukiolaiskannettava.fi -sivustolta\n * soittamalla tukinumeroon 014 4591 625 arkisin klo 8-16.\n * voit myös lähettää sähköpostia osoitteeseen uusi@tuki.opinsys.fi\n\nYstävällisin terveisin\n\nLukiolaiskannettava.fi\n\nhttp://www.lukiolaiskannettava.fi/\nhttps://www.facebook.com/lukiolaiskannettava\nhttps://www.facebook.com/groups/lukiolaiskannettava"
+    footer: "Unohtuneen salasanan voit palauttaa osoitteesta: https://lukiolaiskannettava.opinsys.fi/users/password/forgot\n\nJos tarvitset neuvoja Lukiolaiskannettavan käytössä, ota yhteyttä tukipalveluumme:\n  * soittamalla numeroon 014 4591 624 (ark. klo 8-16) tai\n  * lähettämällä sähköpostia osoitteeseen tuki@opinsys.fi.\n\nOhjeet löydät https://lukiolaiskannettava.fi/ -sivustolta.\n\nYstävällisin terveisin,\n\nOpinsys Oy"
   successfully:
     description: Käyttäjätunnuksen luonti onnistui!
 api:
