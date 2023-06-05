@@ -471,11 +471,16 @@ module PuavoAccounts
     def log_error
       err = env['sinatra.error']
       return if err.nil?
+      return if err.instance_of?(Sinatra::NotFound)
 
       logger.error "unhandled exception:"
       logger.error "    code: #{err.class.name}"
       logger.error "    message: #{err.message}"
       logger.error "    backtrace: #{err.backtrace}"
+    end
+
+    not_found do
+      status 404
     end
 
     def check_if_resent(puavo_rest, user, machine)
@@ -706,14 +711,6 @@ module PuavoAccounts
       # If we get here, the account was created and nothing failed.
 
       return 200, ret.to_json
-    end
-
-    # --------------------------------------------------------------------------
-    # --------------------------------------------------------------------------
-
-    # Everything else goes here
-    get "*" do
-      erb :layout
     end
   end
 end
