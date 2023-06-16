@@ -53,7 +53,7 @@ views:
     description: Käyttäjätunnuksen luonti onnistui!
 api:
   register_email:
-    subject: Käyttäjätunnuksen rekisteröinti Lukiolaiskannettavalle
+    subject: "[Opinsys] Käyttäjätunnuksen rekisteröinti Lukiolaiskannettavalle"
 layout:
   header_title: Lukiolaiskannettava
   container_title: Käyttäjätunnuksen rekisteröinti
