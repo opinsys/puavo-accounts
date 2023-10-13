@@ -1,3 +1,9 @@
+puavo-accounts (0.1.8) bookworm; urgency=low
+
+  * Update for Bookworm.
+
+ -- Puavo Org <dev@opinsys.fi>  Fri, 13 Oct 2023 14:09:12 +0300
+
 puavo-accounts (0.1.7) bullseye; urgency=low
 
   * Update for Bullseye.
