@@ -15,6 +15,7 @@ update-gemfile-lock: clean
 	rm -f Gemfile.lock
 	GEM_HOME=.tmpgem $(BUNDLE) install
 	rm -rf .tmpgem
+	$(BUNDLE) config set --local deployment true
 	$(BUNDLE) install
 
 .PHONY: clean
