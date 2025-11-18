@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Send messages to Mattermost through incoming webhooks
 
 require 'uri'

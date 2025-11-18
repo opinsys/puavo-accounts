@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'http'
 require 'json'
 require 'sinatra/base'
@@ -7,93 +9,8 @@ require 'uri'
 
 require_relative 'lib/mailer'
 require_relative 'lib/mattermost'
-
-class OrgNotConfigured < StandardError; end
-
-class PuavoRestWrapper
-  def initialize(domain, log)
-    unless CONFIG['organisations'].include?(domain) then
-      log.louderror("unknown or invalid organisation \"#{ domain }\"")
-      raise OrgNotConfigured
-    end
-
-    host = CONFIG['puavo-rest']
-    org = CONFIG['organisations'][domain]
-
-    @domain   = domain
-    @host     = host
-    @password = org['password']
-    @username = org['username']
-  end
-
-  def auth_request(username, password)
-    HTTP.basic_auth({
-      :user => username,
-      :pass => password
-    }).headers({
-      'host' => @domain,
-    })
-  end
-
-  def get(url, params={}, username=nil, password=nil)
-    username ||= @username
-    password ||= @password
-    auth_request(username, password).get("#{@host}#{url}", :params => params)
-  end
-
-  def post(url, params, json)
-    auth_request(@username, @password).post("#{@host}#{url}", :params => params,
-                                                              :json   => json)
-  end
-end
-
-class LogWithId
-  attr_reader :id
-
-  def initialize(logger)
-    # Generate a unique ID for this request, to distinguish multiple requests
-    # from each other. Some letters removed to prevent profanities, as the
-    # code is displayed to users in case there are errors.
-    @id = 'ABCDEGIJKLMOQRTUVXYZ1234678'.split('').sample(10).join
-    @logger = logger
-  end
-
-  def error(msg)
-    @logger.error("(#{@id}) #{msg}")
-  end
-
-  def info(msg)
-    @logger.info("(#{@id}) #{msg}")
-  end
-
-  def loudinfo(msg)
-    info(msg)
-    send_to_mattermost(msg)
-  end
-
-  def louderror(msg)
-    error(msg)
-    send_to_mattermost("ERROR: #{msg}")
-  end
-
-  def request_info(msg, request)
-    remote_addr     = request.env['REMOTE_ADDR']          || '?'
-    x_real_ip       = request.env['HTTP_X_REAL_IP']       || '?'
-    x_forwarded_for = request.env['HTTP_X_FORWARDED_FOR'] || '?'
-
-    info "#{ msg } from IP=#{ remote_addr } (x_real_ip=#{ x_real_ip }, x_forwarded_for=#{ x_forwarded_for })"
-  end
-
-  def send_to_mattermost(msg)
-    Thread.new do
-      begin
-        $mattermost.send(@logger, msg)
-      rescue StandardError => e
-        @logger.error("error in sending a message to Mattermost: #{e}")
-      end
-    end
-  end
-end
+require_relative 'lib/log_with_id'
+require_relative 'lib/puavo_rest'
 
 def empty_field(name)  ; { 'name' => name, 'reason' => 'empty'             }; end
 def invalid_field(name); { 'name' => name, 'reason' => 'failed_validation' }; end
@@ -129,7 +46,9 @@ class Machine
   end
 
   def lookup_host(puavo_rest, ret)
-    res = puavo_rest.get("/v3/devices/#{@hostname}", {}, @dn, @password)
+    res = puavo_rest.get("/v3/devices/#{@hostname}",
+                         username: @dn,
+                         password: @password)
 
     if res.code == 401 then
       # the dn/password combo is not valid, so the machine is unlikely to exist
@@ -178,7 +97,9 @@ class Machine
 
   def set_primary_user(puavo_rest, username)
     # Get the user DN
-    res = puavo_rest.get("/v3/users/#{username}")
+    res = puavo_rest.get("/v3/users/#{username}",
+                         username: CONFIG['puavo-rest']['username'],
+                         password: CONFIG['puavo-rest']['password'])
     if res.code != 200 then
       raise "could not retrieve information for #{username}: " \
             "puavo-rest returned #{res.code}"
@@ -193,8 +114,10 @@ class Machine
     device_data = { 'primary_user_dn' => user_dn }
 
     res = puavo_rest.post("/v3/devices/#{@hostname}",
-                         { :hostname => @hostname },
-                         device_data)
+                         username: CONFIG['puavo-rest']['username'],
+                         password: CONFIG['puavo-rest']['password'],
+                         params: { :hostname => @hostname },
+                         json: device_data)
 
     if res.code != 200 then
       raise "could not update primary user #{username} to #{@hostname}: " \
@@ -376,7 +299,10 @@ class User
       user_data['telephone_number'] = @phone
     end
 
-    res = puavo_rest.post('/v3/users', {}, user_data)
+    res = puavo_rest.post('/v3/users',
+                          username: CONFIG['puavo-rest']['username'],
+                          password: CONFIG['puavo-rest']['password'],
+                          json: user_data)
 
     if res.code == 400 then
       # The account was NOT created
@@ -488,8 +414,9 @@ module PuavoAccounts
       # and user password matches (user can fetch his/her own data), we decide
       # that the same form has been resent and should not continue with
       # normal user registration.
-      res = puavo_rest.get("/v3/users/#{user.username}", {}, user.username,
-                           user.password)
+      res = puavo_rest.get("/v3/users/#{user.username}",
+                           username: user.username,
+                           password: user.password)
       if res.code == 200 then
         user_data = JSON.parse(res.body)
         return true if user_data['dn'] == machine.primary_user_dn
