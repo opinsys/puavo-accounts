@@ -13,8 +13,15 @@ if ENV['RACK_ENV'] == 'test'
     ],
     'puavo-rest' => {
       'server' => 'http://127.0.0.1:9292',
-      'username' => '...',
-      'password' => '...',
+    },
+    'oauth2' => {
+      'client_id' => 'puavo_accounts',
+      'client_password' => '...',
+      'token_cache_file' => '/tmp/puavo_accounts_oauth2_cached_token.txt',
+
+      # This file exists in puavo-standalone, so we can use it directly. In production, the actual
+      # production public key must be copied on the server.
+      'public_key_file' => '/etc/puavo-rest.d/oauth2_token_signing_public_key_example.pem'
     },
     'smtp' => {
       'from' => 'Opinsys <no-reply@opinsys.fi>',
