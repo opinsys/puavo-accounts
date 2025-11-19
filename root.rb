@@ -97,8 +97,7 @@ class Machine
   def set_primary_user(puavo_rest, username)
     # Get the user DN
     res = puavo_rest.get("/v3/users/#{username}",
-                         username: CONFIG['puavo-rest']['username'],
-                         password: CONFIG['puavo-rest']['password'])
+                         auth: :oauth2)
     if res.code != 200 then
       raise "could not retrieve information for #{username}: " \
             "puavo-rest returned #{res.code}"
@@ -113,8 +112,7 @@ class Machine
     device_data = { 'primary_user_dn' => user_dn }
 
     res = puavo_rest.post("/v3/devices/#{@hostname}",
-                         username: CONFIG['puavo-rest']['username'],
-                         password: CONFIG['puavo-rest']['password'],
+                         auth: :oauth2,
                          params: { :hostname => @hostname },
                          json: device_data)
 
@@ -299,8 +297,7 @@ class User
     end
 
     res = puavo_rest.post('/v3/users',
-                          username: CONFIG['puavo-rest']['username'],
-                          password: CONFIG['puavo-rest']['password'],
+                          auth: :oauth2,
                           json: user_data)
 
     if res.code == 400 then
