@@ -24,11 +24,6 @@ if ENV['RACK_ENV'] == 'test'
         'enable_starttls_auto' => false
       }
     },
-    'mattermost' => {
-      'enabled' => false,
-      'server' => '',
-      'webhook' => '',
-    },
   }.freeze
 else
   # Production environment

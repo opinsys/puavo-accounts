@@ -21,12 +21,10 @@ class LogWithId
 
   def loudinfo(msg)
     info(msg)
-    send_to_mattermost(msg)
   end
 
   def louderror(msg)
     error(msg)
-    send_to_mattermost("ERROR: #{msg}")
   end
 
   def request_info(msg, request)
@@ -35,15 +33,5 @@ class LogWithId
     x_forwarded_for = request.env['HTTP_X_FORWARDED_FOR'] || '?'
 
     info "#{ msg } from IP=#{ remote_addr } (x_real_ip=#{ x_real_ip }, x_forwarded_for=#{ x_forwarded_for })"
-  end
-
-  def send_to_mattermost(msg)
-    Thread.new do
-      begin
-        $mattermost.send(@logger, msg)
-      rescue StandardError => e
-        @logger.error("error in sending a message to Mattermost: #{e}")
-      end
-    end
   end
 end

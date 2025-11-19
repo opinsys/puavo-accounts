@@ -8,7 +8,6 @@ require 'sinatra/r18n'
 require 'uri'
 
 require_relative 'lib/mailer'
-require_relative 'lib/mattermost'
 require_relative 'lib/log_with_id'
 require_relative 'lib/puavo_rest'
 
@@ -369,13 +368,6 @@ class User
 end
 
 module PuavoAccounts
-  # Setup Mattermost logging
-  $mattermost = Mattermost::Bot.new(
-    CONFIG['mattermost']['server']  || '',
-    CONFIG['mattermost']['webhook'] || '',
-    'user-registration')
-  $mattermost.enable() if CONFIG['mattermost']['enabled']
-
   $mailer = PuavoAccounts::Mailer.new
 
   class Root < Sinatra::Base
