@@ -296,6 +296,10 @@ class User
       user_data['telephone_number'] = @phone
     end
 
+    # Set the account to expire in exactly three years. The time will be extended
+    # manually if necessary (we got mass tools for that).
+    user_data['account_expiration_time'] = Time.now.utc + 60 * 60 * 24 * 365 * 3
+
     res = puavo_rest.post('/v3/users',
                           auth: :oauth2,
                           json: user_data)
